@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title description">
+  <title id="title">Scena placeholder di 5 Minuti</title>
+  <desc id="description">Sagome di una città italiana di notte sotto la pioggia.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#070b12"/>
+      <stop offset="1" stop-color="#101827"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#101827"/>
+      <stop offset="0.5" stop-color="#1a2538"/>
+      <stop offset="1" stop-color="#101827"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <path d="M0 570h250V360h210v210h170V290h300v280h180V400h250v170h240v330H0z" fill="#0b111d"/>
+  <path d="M0 720 800 590l800 130v180H0z" fill="url(#road)"/>
+  <path d="m770 900 30-310 30 310" fill="none" stroke="#d7a85b" stroke-width="5" stroke-dasharray="35 35" opacity=".5"/>
+  <g stroke="#58a6ff" stroke-width="3" opacity=".18">
+    <path d="m120 0-90 340M300 0 210 340M480 0l-90 340M660 0l-90 340M840 0l-90 340M1020 0l-90 340M1200 0l-90 340M1380 0l-90 340M1560 0l-90 340"/>
+  </g>
+  <circle cx="800" cy="545" r="10" fill="#ff4d4d"/>
+</svg>
