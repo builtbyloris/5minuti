@@ -1,3 +1,4 @@
+import { reconcileArchiveDiscoveries } from "@/game/archive/discoveries";
 import { syncActAvailability } from "@/game/engine/acts";
 import { getLocalDateKey } from "@/game/engine/calendar";
 import { reconcilePersistences } from "@/game/engine/persistences";
@@ -60,7 +61,7 @@ export class LocalSaveAdapter implements SaveAdapter {
       }
 
       const reconciled = syncActAvailability(
-        reconcilePersistences(state),
+        reconcilePersistences(reconcileArchiveDiscoveries(state)),
         currentDateKey,
       );
       if (reconciled !== state) {

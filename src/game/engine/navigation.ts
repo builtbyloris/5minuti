@@ -1,3 +1,4 @@
+import { discoverLocation } from "@/game/archive/discoveries";
 import type { GameState, LocationId } from "@/game/state/types";
 
 export type LocationConnection = {
@@ -49,12 +50,15 @@ export function navigateToNode(
   return {
     costSeconds: Math.max(0, Math.floor(connection.travelSeconds)),
     ok: true,
-    state: {
-      ...state,
-      run: {
-        ...state.run,
-        currentLocationId: destinationId,
+    state: discoverLocation(
+      {
+        ...state,
+        run: {
+          ...state.run,
+          currentLocationId: destinationId,
+        },
       },
-    },
+      destinationId,
+    ),
   };
 }

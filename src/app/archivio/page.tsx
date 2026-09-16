@@ -1,5 +1,5 @@
-import { PersistenceArchive } from "@/components/archive/persistence-archive";
+import { ArchiveDossier } from "@/components/archive/archive-dossier";
 
 export default function ArchivePage() {
-  return <PersistenceArchive />;
+  return <ArchiveDossier />;
 }

@@ -45,6 +45,8 @@ describe("GameState iniziale", () => {
       completedActs: [],
       discoveredAnomalies: [],
       discoveredClues: [],
+      discoveredLocations: ["piazza"],
+      discoveredPeople: [],
       discoveredSecrets: [],
       knowledge: [],
       persistences: [],
@@ -105,6 +107,30 @@ describe("LocalSaveAdapter", () => {
     });
   });
 
+  it("riconcilia discovery Archivio ignote o duplicate senza cancellare il save", async () => {
+    const storage = new MemoryStorage();
+    const adapter = new LocalSaveAdapter(storage);
+    const state = createInitialGameState({ id: "guest-archive" });
+    const dirty = {
+      ...state,
+      progression: {
+        ...state.progression,
+        discoveredLocations: ["piazza", "farmacia", "farmacia", "futuro"],
+        discoveredPeople: ["elena", "elena", "subject-03"],
+      },
+    };
+
+    await adapter.save(dirty);
+    const reconciled = await adapter.load();
+
+    expect(reconciled?.progression.discoveredLocations).toEqual([
+      "piazza",
+      "farmacia",
+    ]);
+    expect(reconciled?.progression.discoveredPeople).toEqual(["elena"]);
+    expect(storage.getItem(LOCAL_SAVE_KEY)).not.toBeNull();
+  });
+
   it("migra un salvataggio M4 v1 aggiungendo gli indizi senza perdere dati", async () => {
     const storage = new MemoryStorage();
     const adapter = new LocalSaveAdapter(storage);
@@ -112,6 +138,8 @@ describe("LocalSaveAdapter", () => {
     const {
       actGate: _actGate,
       discoveredClues: _clues,
+      discoveredLocations: _locations,
+      discoveredPeople: _people,
       ...legacyProgression
     } = state.progression;
     const legacySave = {
@@ -126,7 +154,7 @@ describe("LocalSaveAdapter", () => {
 
     const migrated = await adapter.load();
 
-    expect(migrated?.schemaVersion).toBe(3);
+    expect(migrated?.schemaVersion).toBe(4);
     expect(migrated?.progression.knowledge).toEqual([
       "elena_enters_pharmacy_2357",
     ]);
@@ -134,13 +162,23 @@ describe("LocalSaveAdapter", () => {
     expect(migrated?.progression.actGate).toEqual({
       nextActAvailableOn: null,
     });
+    expect(migrated?.progression.discoveredLocations).toEqual([
+      "piazza",
+      "farmacia",
+    ]);
+    expect(migrated?.progression.discoveredPeople).toEqual(["elena"]);
   });
 
   it("migra un salvataggio M6 v2 al gate Atti v3 senza perdere progresso", async () => {
     const storage = new MemoryStorage();
     const adapter = new LocalSaveAdapter(storage);
     const state = createInitialGameState({ id: "guest-m6" });
-    const { actGate: _actGate, ...legacyProgression } = state.progression;
+    const {
+      actGate: _actGate,
+      discoveredLocations: _locations,
+      discoveredPeople: _people,
+      ...legacyProgression
+    } = state.progression;
     const legacySave = {
       ...state,
       progression: {
@@ -159,7 +197,7 @@ describe("LocalSaveAdapter", () => {
 
     const migrated = await adapter.load("2026-09-16");
 
-    expect(migrated?.schemaVersion).toBe(3);
+    expect(migrated?.schemaVersion).toBe(4);
     expect(migrated?.progression.actGate.nextActAvailableOn).toBeNull();
     expect(migrated?.progression.completedActs).toEqual([1]);
     expect(migrated?.progression.knowledge).toEqual([
@@ -173,6 +211,12 @@ describe("LocalSaveAdapter", () => {
     );
     expect(migrated?.run.loopNumber).toBe(7);
     expect(migrated?.settings).toEqual(state.settings);
+    expect(migrated?.progression.discoveredLocations).toEqual([
+      "piazza",
+      "farmacia",
+      "stazione",
+    ]);
+    expect(migrated?.progression.discoveredPeople).toEqual(["elena"]);
   });
 
   it("gestisce un save assente", async () => {

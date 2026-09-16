@@ -1,3 +1,4 @@
+import { discoverPerson } from "@/game/archive/discoveries";
 import {
   getInteractionDefinition,
   INTERACTION_DEFINITIONS,
@@ -72,8 +73,11 @@ export function executeInteraction(
     };
   }
 
+  const observedState = interaction.characterId
+    ? discoverPerson(synchronized.state, interaction.characterId)
+    : synchronized.state;
   const timed = advanceCoreLoop(
-    synchronized.state,
+    observedState,
     synchronized.anchor,
     nowMs,
     events,

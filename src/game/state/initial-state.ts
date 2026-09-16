@@ -36,6 +36,8 @@ export function createInitialGameState(
       completedActs: [],
       discoveredAnomalies: [],
       discoveredClues: [],
+      discoveredLocations: ["piazza"],
+      discoveredPeople: [],
       discoveredSecrets: [],
       knowledge: [],
       persistences: [],

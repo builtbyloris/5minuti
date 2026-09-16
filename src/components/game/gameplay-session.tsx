@@ -13,6 +13,7 @@ import { ResetOverlay } from "@/components/game/reset-overlay";
 import { SecretToast } from "@/components/game/secret-toast";
 import { GameButton } from "@/components/ui/game-button";
 import { Panel } from "@/components/ui/panel";
+import { discoverPerson, syncVisiblePeople } from "@/game/archive/discoveries";
 import { type ActDefinition, getActDefinition } from "@/game/content/acts";
 import {
   type DialogueChoice,
@@ -174,9 +175,12 @@ export function GameplaySession() {
         CITY_EVENTS,
         consumedSeconds,
       );
+      const elapsedSecond = 300 - step.state.run.remainingSeconds;
+      const discoveredState = syncVisiblePeople(step.state, elapsedSecond);
+      const archiveChanged = discoveredState !== step.state;
       anchorRef.current = step.anchor;
-      stateRef.current = step.state;
-      setGame(step.state);
+      stateRef.current = discoveredState;
+      setGame(discoveredState);
 
       if (actionNotice) {
         setNotice(actionNotice);
@@ -185,20 +189,21 @@ export function GameplaySession() {
       }
 
       if (step.ended) {
-        await beginReset(step.state);
+        await beginReset(discoveredState);
         return;
       }
 
       const lastSaved = lastSavedRemainingRef.current;
       const shouldSave =
         consumedSeconds > 0 ||
+        archiveChanged ||
         step.executedEventIds.length > 0 ||
         lastSaved === null ||
-        lastSaved - step.state.run.remainingSeconds >=
+        lastSaved - discoveredState.run.remainingSeconds >=
           PERIODIC_SNAPSHOT_SECONDS;
 
       if (shouldSave) {
-        await persist(step.state);
+        await persist(discoveredState);
       }
     },
     [beginReset, persist],
@@ -237,8 +242,12 @@ export function GameplaySession() {
           return;
         }
 
-        const reconciledGame = reconcilePersistences(
+        const reconciledGameBase = reconcilePersistences(
           reconcileCityState(savedGame),
+        );
+        const reconciledGame = syncVisiblePeople(
+          reconciledGameBase,
+          300 - reconciledGameBase.run.remainingSeconds,
         );
         stateRef.current = reconciledGame;
         lastSavedRemainingRef.current = reconciledGame.run.remainingSeconds;
@@ -357,10 +366,16 @@ export function GameplaySession() {
     }
 
     if (interaction.dialogueId) {
+      const observedState = interaction.characterId
+        ? discoverPerson(current, interaction.characterId)
+        : current;
+      if (observedState !== current) {
+        await persist(observedState);
+      }
       const dialogue = getDialogueDefinition(interaction.dialogueId);
-      const elapsed = 300 - current.run.remainingSeconds;
+      const elapsed = 300 - observedState.run.remainingSeconds;
       const variant = selectDialogueVariant(
-        current,
+        observedState,
         interaction.dialogueId,
         elapsed,
       );

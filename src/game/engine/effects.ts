@@ -1,3 +1,4 @@
+import { discoverLocation } from "@/game/archive/discoveries";
 import type { InteractionEffect } from "@/game/content/interactions";
 import { syncActCompletion } from "@/game/engine/acts";
 import { getLocalDateKey } from "@/game/engine/calendar";
@@ -64,10 +65,13 @@ export function applyInteractionEffects(
         removedPersistenceIds.push(effect.persistenceId);
       }
     } else if (effect.type === "set-location") {
-      nextState = {
-        ...nextState,
-        run: { ...nextState.run, currentLocationId: effect.locationId },
-      };
+      nextState = discoverLocation(
+        {
+          ...nextState,
+          run: { ...nextState.run, currentLocationId: effect.locationId },
+        },
+        effect.locationId,
+      );
     } else if (effect.type === "set-subscene") {
       nextState = {
         ...nextState,

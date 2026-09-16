@@ -106,6 +106,8 @@ export function validateGameState(value: unknown): GameState | null {
     !Array.isArray(progression.persistences) ||
     !progression.persistences.every(isPersistence) ||
     !isStringArray(progression.discoveredClues) ||
+    !isStringArray(progression.discoveredLocations) ||
+    !isStringArray(progression.discoveredPeople) ||
     !isStringArray(progression.discoveredSecrets) ||
     !isStringArray(progression.discoveredAnomalies) ||
     !isRelationshipRecord(progression.relationships)

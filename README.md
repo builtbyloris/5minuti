@@ -10,9 +10,9 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 7 — Atti 1–3.**
+**Milestone 8 — Archivio.**
 
-Il vertical slice narrativo V1 è giocabile dall'Atto 1 all'Atto 3. Il giocatore può scoprire l'accesso sotto la Farmacia, indagare il seminterrato come subscene, incontrare per la prima volta il simbolo ECHO e intercettare l'Uomo in Rosso prima del blackout. Gli Atti, le condizioni di completamento e i contenuti opzionali sono data-driven; knowledge, indizi, segreti e persistenze restano fail-soft attraverso reset e reload.
+Il vertical slice narrativo V1 è giocabile dall'Atto 1 all'Atto 3. L'Archivio è un dossier investigativo derivato dal salvataggio: mostra soltanto Atti, persone, luoghi, indizi, persistenze, segreti e anomalie realmente scoperti. Persone e luoghi visitati vengono registrati nel `GameState`; nessuna informazione dell'Archivio possiede un salvataggio separato.
 
 ## Stack
 
@@ -56,7 +56,7 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Knowledge e indizi sono progressioni distinte e persistenti. Lo schema save v2 aggiunge `discoveredClues`; i salvataggi v1 vengono migrati automaticamente.
 - Le persistenze sono distinte dalla knowledge: descrivono alterazioni residue del mondo o delle relazioni, non ciò che il protagonista sa. Sono definite come contenuti data-driven e applicate al nuovo baseline dopo il reset.
 - `remainingLoops` include il loop corrente. Una persistenza con valore `2` vive nel loop di creazione e nel successivo, poi viene rimossa al reset seguente. L'assenza del campo indica una persistenza senza scadenza.
-- I save usano lo schema v3. La migrazione conserva la catena v1 → v2 → v3 e aggiunge esclusivamente il gate degli Atti; knowledge, indizi, persistenze, loop e impostazioni precedenti vengono mantenuti.
+- I save usano lo schema v4. La migrazione conserva la catena v1 → v2 → v3 → v4 e aggiunge persone e luoghi scoperti. Per i save precedenti la ricostruzione è conservativa: vengono inferiti soltanto incontri e visite dimostrati da dati persistenti, quindi alcuni elementi osservati in passato possono comparire soltanto dopo una nuova visita.
 
 ## Policy degli Atti V1
 
@@ -67,6 +67,15 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Se un Atto resta incompleto, rimane attivo senza streak o penalità anche dopo più giorni. Dopo l'Atto 3 non viene creato o attivato alcun Atto 4.
 - Il seminterrato è una subscene resettabile della Farmacia: non modifica la topologia a quattro nodi.
 - Sono presenti esattamente tre segreti ambientali opzionali, uno sbloccato dopo ciascun Atto. Non sono richiesti alla storia e il totale complessivo non viene mostrato.
+
+## Policy dell'Archivio
+
+- L'Archivio è un view model derivato dal `GameState`, non una copia della progressione e non una wiki del contenuto.
+- Un elemento non scoperto non compare: non vengono mostrati placeholder, percentuali o totali che possano anticipare contenuti futuri.
+- Persone e luoghi vengono registrati in modo idempotente soltanto quando sono realmente osservati o raggiunti. Il seminterrato resta una sottoscena della Farmacia.
+- Le schede progressive usano knowledge, indizi, Atti completati, persistenze e segreti già presenti come fonti autorevoli.
+- Durante `/archivio` non viene creato alcun clock: il gameplay riprende dallo snapshot salvato all'uscita da `/gioca`.
+- La sezione Anomalie legge `discoveredAnomalies`, ma la scoperta via gameplay delle anomalie non è ancora implementata.
 
 ## Script
 
@@ -92,6 +101,7 @@ src/
     game/              menu, intro, timer, reset e shell gameplay
     ui/                AppShell, pulsanti, pannelli e icone
   game/
+    archive/           metadata, discovery tracking e view model anti-spoiler
     engine/            clock, scheduler, Atti, interazioni, condizioni, effetti e persistenze
     content/           Atti, città, routine, dialoghi, knowledge, indizi, segreti e persistenze
     state/             tipi, factory, selettori e transizioni pure
