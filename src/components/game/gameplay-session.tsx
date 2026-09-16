@@ -1,11 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ActionGrid } from "@/components/game/action-grid";
 import { CityMap } from "@/components/game/city-map";
 import { CountdownTimer } from "@/components/game/countdown-timer";
+import { DialogueBox } from "@/components/game/dialogue-box";
+import { Journal } from "@/components/game/journal";
+import { KnowledgeToast } from "@/components/game/knowledge-toast";
 import { ResetOverlay } from "@/components/game/reset-overlay";
 import { GameButton } from "@/components/ui/game-button";
 import { Panel } from "@/components/ui/panel";
+import {
+  type DialogueChoice,
+  type DialogueVariant,
+  getDialogueDefinition,
+} from "@/game/content/dialogues";
+import type { InteractionDefinition } from "@/game/content/interactions";
+import {
+  getKnowledgeDefinition,
+  type KnowledgeDefinition,
+} from "@/game/content/knowledge";
 import {
   CITY_LOCATIONS,
   getLocation,
@@ -17,7 +31,14 @@ import {
   createClockAnchor,
   getElapsedSeconds,
 } from "@/game/engine/clock";
+import { getDiscoveredClues } from "@/game/engine/clues";
 import { advanceCoreLoop, createSaveSnapshot } from "@/game/engine/core-loop";
+import { selectDialogueVariant } from "@/game/engine/dialogues";
+import {
+  executeInteraction,
+  getAvailableInteractions,
+} from "@/game/engine/interactions";
+import { getAcquiredKnowledge } from "@/game/engine/knowledge";
 import { navigateToNode } from "@/game/engine/navigation";
 import { resetGameLoop } from "@/game/engine/reset";
 import { getCharactersAtLocation } from "@/game/engine/routines";
@@ -25,6 +46,12 @@ import { localSave } from "@/game/persistence/local-save";
 import type { GameState } from "@/game/state/types";
 
 type SessionPhase = "loading" | "missing" | "playing" | "resetting" | "error";
+
+type ActiveDialogue = {
+  characterName: string;
+  response?: string;
+  variant: DialogueVariant;
+};
 
 const UI_REFRESH_MS = 500;
 const PERIODIC_SNAPSHOT_SECONDS = 5;
@@ -34,6 +61,11 @@ export function GameplaySession() {
   const [game, setGame] = useState<GameState | null>(null);
   const [phase, setPhase] = useState<SessionPhase>("loading");
   const [notice, setNotice] = useState("");
+  const [activeDialogue, setActiveDialogue] = useState<ActiveDialogue | null>(
+    null,
+  );
+  const [knowledgeToast, setKnowledgeToast] =
+    useState<KnowledgeDefinition | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const anchorRef = useRef<ClockAnchor | null>(null);
   const phaseRef = useRef<SessionPhase>("loading");
@@ -70,6 +102,8 @@ export function GameplaySession() {
     );
     await persist(resetState, false);
     resetInProgressRef.current = false;
+    setActiveDialogue(null);
+    setKnowledgeToast(null);
     setNotice("Nuovo loop avviato alle 23:55.");
     updatePhase("playing");
   }, [persist, updatePhase]);
@@ -219,6 +253,16 @@ export function GameplaySession() {
     };
   }, [applyStep, beginReset, saveCurrentSnapshot, updatePhase]);
 
+  useEffect(() => {
+    if (!knowledgeToast) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setKnowledgeToast(null), 5_000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [knowledgeToast]);
+
   async function consumeTime(seconds: number) {
     await applyStep(
       seconds,
@@ -241,10 +285,74 @@ export function GameplaySession() {
     }
 
     stateRef.current = navigation.state;
+    setActiveDialogue(null);
     await applyStep(
       navigation.costSeconds,
       `Spostamento completato: ${navigation.costSeconds} secondi trascorsi.`,
     );
+  }
+
+  async function performInteraction(interaction: InteractionDefinition) {
+    const current = stateRef.current;
+    const anchor = anchorRef.current;
+
+    if (!current || !anchor || phaseRef.current !== "playing") {
+      return;
+    }
+
+    if (interaction.dialogueId) {
+      const dialogue = getDialogueDefinition(interaction.dialogueId);
+      const elapsed = 300 - current.run.remainingSeconds;
+      const variant = selectDialogueVariant(
+        current,
+        interaction.dialogueId,
+        elapsed,
+      );
+
+      if (dialogue && variant) {
+        setActiveDialogue({ characterName: dialogue.characterName, variant });
+        setNotice(interaction.result);
+      }
+      return;
+    }
+
+    const result = executeInteraction(
+      current,
+      anchor,
+      Date.now(),
+      CITY_EVENTS,
+      interaction.id,
+    );
+
+    if (!result.ok) {
+      setNotice("Questa possibilità non è più disponibile.");
+      return;
+    }
+
+    anchorRef.current = result.anchor;
+    stateRef.current = result.state;
+    setGame(result.state);
+    setNotice(result.interaction.result);
+
+    const acquiredId = result.acquiredKnowledgeIds[0];
+    const acquired = acquiredId ? getKnowledgeDefinition(acquiredId) : null;
+    if (acquired) {
+      setKnowledgeToast(acquired);
+    }
+
+    if (result.ended) {
+      await beginReset(result.state);
+      return;
+    }
+
+    await persist(result.state);
+  }
+
+  async function chooseDialogueOption(choice: DialogueChoice) {
+    setActiveDialogue((current) =>
+      current ? { ...current, response: choice.response } : current,
+    );
+    await applyStep(choice.timeCost, choice.response);
   }
 
   if (phase === "loading") {
@@ -291,6 +399,9 @@ export function GameplaySession() {
     ? getObservableDetails(game, currentNode)
     : [];
   const isBlackout = game.world.flags.blackout === true;
+  const availableInteractions = getAvailableInteractions(game, elapsedSecond);
+  const acquiredKnowledge = getAcquiredKnowledge(game);
+  const discoveredClues = getDiscoveredClues(game);
 
   return (
     <main className="gameplay" id="main-content">
@@ -364,18 +475,36 @@ export function GameplaySession() {
         <aside className="gameplay__controls">
           <CountdownTimer remainingSeconds={game.run.remainingSeconds} />
 
+          <ActionGrid
+            disabled={phase !== "playing" || Boolean(activeDialogue)}
+            interactions={availableInteractions}
+            onSelect={(interaction) => void performInteraction(interaction)}
+          />
+
+          {activeDialogue ? (
+            <DialogueBox
+              characterName={activeDialogue.characterName}
+              onChoice={(choice) => void chooseDialogueOption(choice)}
+              onClose={() => setActiveDialogue(null)}
+              response={activeDialogue.response}
+              variant={activeDialogue.variant}
+            />
+          ) : null}
+
+          <Journal clues={discoveredClues} knowledge={acquiredKnowledge} />
+
           <Panel eyebrow="Percorsi" title="Mappa della città">
             <div className="space-y-3 p-4 sm:p-5">
               <CityMap
                 currentLocationId={game.run.currentLocationId}
-                disabled={phase !== "playing"}
+                disabled={phase !== "playing" || Boolean(activeDialogue)}
                 locations={CITY_LOCATIONS}
                 onTravel={(destinationId) => void travel(destinationId)}
               />
 
               <GameButton
                 className="mt-4"
-                disabled={phase !== "playing"}
+                disabled={phase !== "playing" || Boolean(activeDialogue)}
                 onClick={() => void consumeTime(15)}
               >
                 Aspetta 15 secondi
@@ -404,6 +533,13 @@ export function GameplaySession() {
 
       {phase === "resetting" ? (
         <ResetOverlay loopNumber={game.run.loopNumber} />
+      ) : null}
+
+      {knowledgeToast ? (
+        <KnowledgeToast
+          knowledge={knowledgeToast}
+          onClose={() => setKnowledgeToast(null)}
+        />
       ) : null}
     </main>
   );

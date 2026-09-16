@@ -32,6 +32,7 @@ export function createInitialGameState(
     progression: {
       completedActs: [],
       discoveredAnomalies: [],
+      discoveredClues: [],
       discoveredSecrets: [],
       knowledge: [],
       persistences: [],

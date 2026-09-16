@@ -249,7 +249,7 @@ describe("eventi globali M4", () => {
     );
   });
 
-  it("riconcilia un salvataggio M3 senza cambiare versione dello schema", () => {
+  it("riconcilia una location tecnica senza alterare lo schema corrente", () => {
     const state = createInitialGameState({ id: "guest-m3" });
     const oldSave = {
       ...state,
@@ -261,7 +261,7 @@ describe("eventi globali M4", () => {
     };
     const reconciled = reconcileCityState(oldSave);
 
-    expect(reconciled.schemaVersion).toBe(1);
+    expect(reconciled.schemaVersion).toBe(2);
     expect(reconciled.run.currentLocationId).toBe("piazza");
     expect(reconciled.world.flags.blackout).toBe(true);
   });

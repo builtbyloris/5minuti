@@ -43,6 +43,7 @@ describe("GameState iniziale", () => {
     expect(state.progression).toEqual({
       completedActs: [],
       discoveredAnomalies: [],
+      discoveredClues: [],
       discoveredSecrets: [],
       knowledge: [],
       persistences: [],
@@ -81,6 +82,50 @@ describe("LocalSaveAdapter", () => {
 
     await adapter.clear();
     expect(await adapter.load()).toBeNull();
+  });
+
+  it("mantiene knowledge e clue dopo save/load", async () => {
+    const adapter = new LocalSaveAdapter(new MemoryStorage());
+    const state = createInitialGameState({ id: "guest-test" });
+    const progressed = {
+      ...state,
+      progression: {
+        ...state.progression,
+        discoveredClues: ["pharmacy_wet_footprints"],
+        knowledge: ["elena_enters_pharmacy_2357"],
+      },
+    };
+
+    await adapter.save(progressed);
+
+    expect((await adapter.load())?.progression).toMatchObject({
+      discoveredClues: ["pharmacy_wet_footprints"],
+      knowledge: ["elena_enters_pharmacy_2357"],
+    });
+  });
+
+  it("migra un salvataggio M4 v1 aggiungendo gli indizi senza perdere dati", async () => {
+    const storage = new MemoryStorage();
+    const adapter = new LocalSaveAdapter(storage);
+    const state = createInitialGameState({ id: "guest-m4" });
+    const { discoveredClues: _clues, ...legacyProgression } = state.progression;
+    const legacySave = {
+      ...state,
+      progression: {
+        ...legacyProgression,
+        knowledge: ["elena_enters_pharmacy_2357"],
+      },
+      schemaVersion: 1,
+    };
+    storage.setItem(LOCAL_SAVE_KEY, JSON.stringify(legacySave));
+
+    const migrated = await adapter.load();
+
+    expect(migrated?.schemaVersion).toBe(2);
+    expect(migrated?.progression.knowledge).toEqual([
+      "elena_enters_pharmacy_2357",
+    ]);
+    expect(migrated?.progression.discoveredClues).toEqual([]);
   });
 
   it("gestisce un save assente", async () => {

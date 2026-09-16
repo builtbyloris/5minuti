@@ -1,4 +1,4 @@
-export const GAME_STATE_SCHEMA_VERSION = 1 as const;
+export const GAME_STATE_SCHEMA_VERSION = 2 as const;
 
 export type ActId = number;
 
@@ -35,6 +35,7 @@ export type RunState = {
 export type ProgressionState = {
   completedActs: ActId[];
   discoveredAnomalies: string[];
+  discoveredClues: string[];
   discoveredSecrets: string[];
   knowledge: string[];
   persistences: PersistenceState[];

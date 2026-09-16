@@ -10,9 +10,9 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 4 — Città viva e routine NPC.**
+**Milestone 5 — Interazioni, dialoghi e conoscenza.**
 
-Il repository contiene lo scaffold tecnico, il design system, il menu principale responsive, l'introduzione narrativa, il game state guest e il core temporale realmente funzionante. La città V1 comprende Piazza, Farmacia, Stazione e Vicolo, con mappa accessibile, eventi temporali, blackout e routine deterministiche per Elena, Uomo in Rosso, Farmacista e Controllore.
+Il repository contiene lo scaffold tecnico, il design system, il menu principale responsive, l'introduzione narrativa, il game state guest e il core temporale realmente funzionante. La città V1 comprende Piazza, Farmacia, Stazione e Vicolo, con mappa accessibile, eventi temporali, blackout e routine deterministiche. Il giocatore può ora esplorare, osservare, parlare, seguire e usare elementi della scena; conoscenze e indizi persistono nel Diario e una conoscenza acquisita modifica un dialogo in un loop successivo.
 
 ## Stack
 
@@ -52,6 +52,8 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - La topologia è centrata sulla Piazza: Farmacia 15 s, Stazione 20 s e Vicolo 12 s. Le route inverse hanno lo stesso costo; i nodi periferici non sono collegati direttamente.
 - Il blackout avviene al secondo trascorso 180 (`23:58:00`) anche fuori scena o con la scheda in background. I world flag della città sono relativi al loop e vengono puliti dal reset.
 - Le routine NPC sono dati dichiarativi risolti da selettori puri. Una perturbazione può scegliere una variante tramite run flag senza modificare clock o scheduler.
+- I costi M5 sono dati di balancing: Esplora 7–8 s, Osserva 5 s, Parla 10 s, Segui 15 s e Usa 3 s. Ogni costo passa dal core loop autorevole.
+- Knowledge e indizi sono progressioni distinte e persistenti. Lo schema save v2 aggiunge `discoveredClues`; i salvataggi v1 vengono migrati automaticamente.
 
 ## Script
 
@@ -77,8 +79,8 @@ src/
     game/              menu, intro, timer, reset e shell gameplay
     ui/                AppShell, pulsanti, pannelli e icone
   game/
-    engine/            clock, core loop, scheduler, reset e navigazione
-    content/           città, eventi e routine NPC data-driven
+    engine/            clock, scheduler, interazioni, condizioni ed effetti
+    content/           città, routine, dialoghi, knowledge e indizi data-driven
     state/             tipi, factory, selettori e transizioni pure
     persistence/       adapter locale, validazione e migrazioni
   lib/                 utility generiche

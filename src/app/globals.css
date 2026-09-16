@@ -409,6 +409,229 @@ button {
   text-transform: uppercase;
 }
 
+.action-grid,
+.dialogue-box,
+.journal {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.28);
+}
+
+.action-grid__header,
+.dialogue-box__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.9rem 1rem;
+}
+
+.action-grid__header p,
+.dialogue-box__header p,
+.knowledge-toast p {
+  color: var(--accent-red-strong);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.action-grid__header h2,
+.dialogue-box__header h2 {
+  margin-top: 0.2rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.action-grid__buttons,
+.dialogue-box__choices {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.action-grid__button-copy {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.action-grid__button-copy small {
+  color: currentColor;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  opacity: 0.62;
+}
+
+.action-grid__empty {
+  padding: 1rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.dialogue-box {
+  border-color: rgba(215, 168, 91, 0.38);
+}
+
+.dialogue-box__close,
+.knowledge-toast button {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+}
+
+.dialogue-box__close:hover,
+.knowledge-toast button:hover {
+  border-color: var(--accent-red-strong);
+  color: var(--text-main);
+}
+
+.dialogue-box__close:focus-visible,
+.knowledge-toast button:focus-visible,
+.journal summary:focus-visible {
+  outline: 2px solid var(--accent-red-strong);
+  outline-offset: 3px;
+}
+
+.dialogue-box__body {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.dialogue-box__body > p {
+  color: var(--text-main);
+  font-size: 0.85rem;
+  line-height: 1.65;
+}
+
+.dialogue-box__choices {
+  padding: 0;
+}
+
+.journal summary {
+  display: flex;
+  min-height: 3.75rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  list-style: none;
+  text-transform: uppercase;
+}
+
+.journal summary::-webkit-details-marker {
+  display: none;
+}
+
+.journal summary > span:first-child {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.journal summary small,
+.journal__body h2 {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.18em;
+}
+
+.journal summary > span:last-child {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border: 1px solid rgba(61, 220, 151, 0.42);
+  color: var(--accent-green);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.journal__body {
+  display: grid;
+  gap: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+  padding: 1rem;
+}
+
+.journal__body ul {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.journal__body li {
+  border-left: 1px solid var(--accent-green);
+  padding-left: 0.75rem;
+}
+
+.journal__body strong {
+  font-size: 0.75rem;
+}
+
+.journal__body p {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.journal__empty {
+  margin-top: 0.65rem;
+}
+
+.knowledge-toast {
+  position: fixed;
+  top: 5rem;
+  right: 1rem;
+  z-index: 70;
+  display: flex;
+  width: min(24rem, calc(100vw - 2rem));
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(61, 220, 151, 0.55);
+  background: var(--bg-panel-strong);
+  padding: 0.8rem;
+  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.5);
+  animation: knowledge-toast-in 180ms ease-out;
+}
+
+.knowledge-toast strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+@keyframes knowledge-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .gameplay-timer {
   border-left: 1px solid rgba(255, 77, 77, 0.55);
   padding-left: 1.25rem;
@@ -539,7 +762,7 @@ button {
   }
 
   .gameplay__controls {
-    justify-content: center;
+    justify-content: flex-start;
     padding: 2.5rem;
   }
 }

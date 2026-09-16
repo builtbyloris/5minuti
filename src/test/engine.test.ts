@@ -225,13 +225,13 @@ describe("reset deterministico", () => {
     expect(step.state.run.remainingSeconds).toBe(0);
   });
 
-  it("mantiene compatibile e valido uno stato creato in M2", () => {
+  it("mantiene valido lo stato corrente dopo l'evoluzione delle milestone", () => {
     const milestoneTwoSave = createInitialGameState({
       id: "guest-m2",
       now: "2026-09-16T08:00:00.000Z",
     });
 
-    expect(milestoneTwoSave.schemaVersion).toBe(1);
+    expect(milestoneTwoSave.schemaVersion).toBe(2);
     expect(
       validateGameState(JSON.parse(JSON.stringify(milestoneTwoSave))),
     ).toEqual(milestoneTwoSave);
