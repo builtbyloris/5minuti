@@ -10,9 +10,9 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 0 — Fondamenta e repository.**
+**Milestone 1 — Design system e menu principale.**
 
-Il repository contiene lo scaffold tecnico, i controlli di qualità, i design token iniziali e una home placeholder responsive. Gameplay, menu, timer, stato di gioco, salvataggio e autenticazione saranno sviluppati nelle milestone successive.
+Il repository contiene lo scaffold tecnico, i controlli di qualità, il design system base e il menu principale responsive. Le route secondarie sono placeholder intenzionali: gameplay, stato di gioco, salvataggio e autenticazione saranno sviluppati nelle milestone successive.
 
 ## Stack
 
@@ -57,11 +57,11 @@ npm run test:watch    # test in modalità watch
 
 ```text
 src/
-  app/                 routing e shell Next.js
+  app/                 routing e pagine Next.js
   components/
     archive/           UI dell'Archivio
-    game/              UI di gioco
-    ui/                componenti condivisi
+    game/              menu e futura UI di gioco
+    ui/                AppShell, pulsanti, pannelli e icone
   game/
     engine/            clock, scheduler e reducer
     content/           Atti e contenuti data-driven
