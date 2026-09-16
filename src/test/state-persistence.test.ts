@@ -41,6 +41,7 @@ describe("GameState iniziale", () => {
       runFlags: {},
     });
     expect(state.progression).toEqual({
+      actGate: { nextActAvailableOn: null },
       completedActs: [],
       discoveredAnomalies: [],
       discoveredClues: [],
@@ -108,7 +109,11 @@ describe("LocalSaveAdapter", () => {
     const storage = new MemoryStorage();
     const adapter = new LocalSaveAdapter(storage);
     const state = createInitialGameState({ id: "guest-m4" });
-    const { discoveredClues: _clues, ...legacyProgression } = state.progression;
+    const {
+      actGate: _actGate,
+      discoveredClues: _clues,
+      ...legacyProgression
+    } = state.progression;
     const legacySave = {
       ...state,
       progression: {
@@ -121,11 +126,53 @@ describe("LocalSaveAdapter", () => {
 
     const migrated = await adapter.load();
 
-    expect(migrated?.schemaVersion).toBe(2);
+    expect(migrated?.schemaVersion).toBe(3);
     expect(migrated?.progression.knowledge).toEqual([
       "elena_enters_pharmacy_2357",
     ]);
     expect(migrated?.progression.discoveredClues).toEqual([]);
+    expect(migrated?.progression.actGate).toEqual({
+      nextActAvailableOn: null,
+    });
+  });
+
+  it("migra un salvataggio M6 v2 al gate Atti v3 senza perdere progresso", async () => {
+    const storage = new MemoryStorage();
+    const adapter = new LocalSaveAdapter(storage);
+    const state = createInitialGameState({ id: "guest-m6" });
+    const { actGate: _actGate, ...legacyProgression } = state.progression;
+    const legacySave = {
+      ...state,
+      progression: {
+        ...legacyProgression,
+        completedActs: [1],
+        discoveredClues: ["pharmacy_wet_footprints"],
+        knowledge: ["elena_enters_pharmacy_2357"],
+        persistences: [
+          { active: true, id: "station_token_shifted", type: "physical" },
+        ],
+      },
+      run: { ...state.run, currentActId: 1, loopNumber: 7 },
+      schemaVersion: 2,
+    };
+    storage.setItem(LOCAL_SAVE_KEY, JSON.stringify(legacySave));
+
+    const migrated = await adapter.load("2026-09-16");
+
+    expect(migrated?.schemaVersion).toBe(3);
+    expect(migrated?.progression.actGate.nextActAvailableOn).toBeNull();
+    expect(migrated?.progression.completedActs).toEqual([1]);
+    expect(migrated?.progression.knowledge).toEqual([
+      "elena_enters_pharmacy_2357",
+    ]);
+    expect(migrated?.progression.discoveredClues).toEqual([
+      "pharmacy_wet_footprints",
+    ]);
+    expect(migrated?.progression.persistences[0]?.id).toBe(
+      "station_token_shifted",
+    );
+    expect(migrated?.run.loopNumber).toBe(7);
+    expect(migrated?.settings).toEqual(state.settings);
   });
 
   it("gestisce un save assente", async () => {

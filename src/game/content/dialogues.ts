@@ -142,6 +142,32 @@ export const DIALOGUE_DEFINITIONS: DialogueDefinition[] = [
       },
     ],
   },
+  {
+    characterId: "red-man",
+    characterName: "Uomo in Rosso",
+    id: "red-man-confrontation",
+    variants: [
+      {
+        choices: [
+          {
+            effects: [
+              {
+                knowledgeId: "red_man_knows_player",
+                type: "acquire-knowledge",
+              },
+            ],
+            id: "ask-red-man-identity",
+            label: "Chiedere come fa a conoscerti",
+            response: "«Sei tornato troppo presto.»",
+            timeCost: 8,
+          },
+        ],
+        id: "confrontation",
+        opening:
+          "Non cerca una via di fuga. Ti guarda come se avesse già sentito i tuoi passi.",
+      },
+    ],
+  },
 ];
 
 export function getDialogueDefinition(id: string) {

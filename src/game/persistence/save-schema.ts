@@ -97,6 +97,10 @@ export function validateGameState(value: unknown): GameState | null {
 
   if (
     !isRecord(progression) ||
+    !isRecord(progression.actGate) ||
+    (progression.actGate.nextActAvailableOn !== null &&
+      (typeof progression.actGate.nextActAvailableOn !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(progression.actGate.nextActAvailableOn))) ||
     !isNumberArray(progression.completedActs) ||
     !isStringArray(progression.knowledge) ||
     !Array.isArray(progression.persistences) ||

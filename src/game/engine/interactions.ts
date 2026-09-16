@@ -14,7 +14,9 @@ export type InteractionExecutionResult =
   | {
       acquiredKnowledgeIds: string[];
       anchor: ClockAnchor;
+      completedActId: number | null;
       discoveredClueIds: string[];
+      discoveredSecretIds: string[];
       grantedPersistenceIds: string[];
       removedPersistenceIds: string[];
       ended: boolean;
@@ -44,6 +46,7 @@ export function executeInteraction(
   nowMs: number,
   events: ScheduledEvent[],
   interactionId: string,
+  currentDateKey?: string,
 ): InteractionExecutionResult {
   const interaction = getInteractionDefinition(interactionId);
 
@@ -76,12 +79,18 @@ export function executeInteraction(
     events,
     interaction.timeCost,
   );
-  const effects = applyInteractionEffects(timed.state, interaction.effects);
+  const effects = applyInteractionEffects(
+    timed.state,
+    interaction.effects,
+    currentDateKey,
+  );
 
   return {
     acquiredKnowledgeIds: effects.acquiredKnowledgeIds,
     anchor: timed.anchor,
+    completedActId: effects.completedActId,
     discoveredClueIds: effects.discoveredClueIds,
+    discoveredSecretIds: effects.discoveredSecretIds,
     grantedPersistenceIds: effects.grantedPersistenceIds,
     removedPersistenceIds: effects.removedPersistenceIds,
     ended: timed.ended,

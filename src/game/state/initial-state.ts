@@ -30,6 +30,9 @@ export function createInitialGameState(
       runFlags: {},
     },
     progression: {
+      actGate: {
+        nextActAvailableOn: null,
+      },
       completedActs: [],
       discoveredAnomalies: [],
       discoveredClues: [],

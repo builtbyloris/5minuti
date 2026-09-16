@@ -1,4 +1,4 @@
-export const GAME_STATE_SCHEMA_VERSION = 2 as const;
+export const GAME_STATE_SCHEMA_VERSION = 3 as const;
 
 export type ActId = number;
 
@@ -33,6 +33,9 @@ export type RunState = {
 };
 
 export type ProgressionState = {
+  actGate: {
+    nextActAvailableOn: string | null;
+  };
   completedActs: ActId[];
   discoveredAnomalies: string[];
   discoveredClues: string[];

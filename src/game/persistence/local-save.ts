@@ -1,3 +1,5 @@
+import { syncActAvailability } from "@/game/engine/acts";
+import { getLocalDateKey } from "@/game/engine/calendar";
 import { reconcilePersistences } from "@/game/engine/persistences";
 import {
   getSaveSchemaVersion,
@@ -23,7 +25,7 @@ export class LocalSaveAdapter implements SaveAdapter {
     this.getStorage()?.removeItem(LOCAL_SAVE_KEY);
   }
 
-  async load() {
+  async load(currentDateKey = getLocalDateKey()) {
     const storage = this.getStorage();
 
     if (!storage) {
@@ -57,7 +59,10 @@ export class LocalSaveAdapter implements SaveAdapter {
         return null;
       }
 
-      const reconciled = reconcilePersistences(state);
+      const reconciled = syncActAvailability(
+        reconcilePersistences(state),
+        currentDateKey,
+      );
       if (reconciled !== state) {
         storage.setItem(LOCAL_SAVE_KEY, JSON.stringify(reconciled));
       }

@@ -25,6 +25,26 @@ const migrations: Partial<Record<number, Migration>> = {
       schemaVersion: 2,
     };
   },
+  2: (value) => {
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      !("progression" in value) ||
+      typeof value.progression !== "object" ||
+      value.progression === null
+    ) {
+      return value;
+    }
+
+    return {
+      ...value,
+      progression: {
+        ...value.progression,
+        actGate: { nextActAvailableOn: null },
+      },
+      schemaVersion: 3,
+    };
+  },
 };
 
 export function getSaveSchemaVersion(value: unknown) {

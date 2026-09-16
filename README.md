@@ -10,9 +10,9 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 6 — Persistenze tra i loop.**
+**Milestone 7 — Atti 1–3.**
 
-Il repository contiene lo scaffold tecnico, il design system, il menu principale responsive, l'introduzione narrativa, il game state guest e il core temporale realmente funzionante. La città V1 comprende Piazza, Farmacia, Stazione e Vicolo, con mappa accessibile, eventi temporali, blackout e routine deterministiche. Il giocatore può esplorare, osservare, parlare, seguire e usare elementi della scena. La Milestone 6 introduce persistenze fisiche e relazionali data-driven: un oggetto può restare spostato dopo il reset e una diffidenza residua può modificare temporaneamente un dialogo, senza attribuire falsi ricordi agli NPC.
+Il vertical slice narrativo V1 è giocabile dall'Atto 1 all'Atto 3. Il giocatore può scoprire l'accesso sotto la Farmacia, indagare il seminterrato come subscene, incontrare per la prima volta il simbolo ECHO e intercettare l'Uomo in Rosso prima del blackout. Gli Atti, le condizioni di completamento e i contenuti opzionali sono data-driven; knowledge, indizi, segreti e persistenze restano fail-soft attraverso reset e reload.
 
 ## Stack
 
@@ -56,7 +56,17 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Knowledge e indizi sono progressioni distinte e persistenti. Lo schema save v2 aggiunge `discoveredClues`; i salvataggi v1 vengono migrati automaticamente.
 - Le persistenze sono distinte dalla knowledge: descrivono alterazioni residue del mondo o delle relazioni, non ciò che il protagonista sa. Sono definite come contenuti data-driven e applicate al nuovo baseline dopo il reset.
 - `remainingLoops` include il loop corrente. Una persistenza con valore `2` vive nel loop di creazione e nel successivo, poi viene rimossa al reset seguente. L'assenza del campo indica una persistenza senza scadenza.
-- I save restano allo schema v2, che conteneva già il contratto necessario. Al caricamento, ID rimossi, tipi incoerenti e duplicati vengono scartati; gli effetti derivati vengono ricostruiti in modo idempotente.
+- I save usano lo schema v3. La migrazione conserva la catena v1 → v2 → v3 e aggiunge esclusivamente il gate degli Atti; knowledge, indizi, persistenze, loop e impostazioni precedenti vengono mantenuti.
+
+## Policy degli Atti V1
+
+- Gli Atti 1–3 sono definiti in `game/content/acts` e valutati da funzioni pure. La UI mostra titolo, domanda e scoperte reali, mai condizioni mancanti o checklist-soluzione.
+- Può essere completato un solo Atto principale per giorno reale. Dopo una completion, il giocatore può continuare a esplorare e cercare segreti; l'Atto successivo diventa disponibile dal giorno locale seguente.
+- Il gate usa la data locale del dispositivo nel formato `YYYY-MM-DD`. Il giorno successivo viene calcolato come giorno di calendario, senza aggiungere 24 ore in millisecondi, così i cambi DST non alterano la regola.
+- La V1 non possiede ancora un tempo autorevole cloud: il gate è quindi client-local. Una futura sincronizzazione account dovrà renderlo server-aware senza cambiare i contratti dell'Act engine.
+- Se un Atto resta incompleto, rimane attivo senza streak o penalità anche dopo più giorni. Dopo l'Atto 3 non viene creato o attivato alcun Atto 4.
+- Il seminterrato è una subscene resettabile della Farmacia: non modifica la topologia a quattro nodi.
+- Sono presenti esattamente tre segreti ambientali opzionali, uno sbloccato dopo ciascun Atto. Non sono richiesti alla storia e il totale complessivo non viene mostrato.
 
 ## Script
 
@@ -82,8 +92,8 @@ src/
     game/              menu, intro, timer, reset e shell gameplay
     ui/                AppShell, pulsanti, pannelli e icone
   game/
-    engine/            clock, scheduler, interazioni, condizioni, effetti e persistenze
-    content/           città, routine, dialoghi, knowledge, indizi e persistenze data-driven
+    engine/            clock, scheduler, Atti, interazioni, condizioni, effetti e persistenze
+    content/           Atti, città, routine, dialoghi, knowledge, indizi, segreti e persistenze
     state/             tipi, factory, selettori e transizioni pure
     persistence/       adapter locale, validazione e migrazioni
   lib/                 utility generiche

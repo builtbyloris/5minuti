@@ -1,3 +1,5 @@
+import { syncActAvailability } from "@/game/engine/acts";
+import { getLocalDateKey } from "@/game/engine/calendar";
 import { LOOP_DURATION_SECONDS } from "@/game/engine/clock";
 import {
   advancePersistenceLifecycle,
@@ -10,6 +12,7 @@ export const INITIAL_LOCATION_ID: LocationId = "piazza";
 export function resetGameLoop(
   state: GameState,
   now = new Date().toISOString(),
+  currentDateKey = getLocalDateKey(),
 ): GameState {
   if (state.run.remainingSeconds !== 0) {
     return state;
@@ -35,5 +38,8 @@ export function resetGameLoop(
     },
   };
 
-  return applyPersistencesToFreshRun(advancePersistenceLifecycle(baseline));
+  return syncActAvailability(
+    applyPersistencesToFreshRun(advancePersistenceLifecycle(baseline)),
+    currentDateKey,
+  );
 }

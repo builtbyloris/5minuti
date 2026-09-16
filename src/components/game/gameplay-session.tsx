@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ActCompleteOverlay } from "@/components/game/act-complete-overlay";
 import { ActionGrid } from "@/components/game/action-grid";
 import { CityMap } from "@/components/game/city-map";
 import { CountdownTimer } from "@/components/game/countdown-timer";
@@ -9,8 +10,10 @@ import { Journal } from "@/components/game/journal";
 import { KnowledgeToast } from "@/components/game/knowledge-toast";
 import { PersistenceToast } from "@/components/game/persistence-toast";
 import { ResetOverlay } from "@/components/game/reset-overlay";
+import { SecretToast } from "@/components/game/secret-toast";
 import { GameButton } from "@/components/ui/game-button";
 import { Panel } from "@/components/ui/panel";
+import { type ActDefinition, getActDefinition } from "@/game/content/acts";
 import {
   type DialogueChoice,
   type DialogueVariant,
@@ -30,7 +33,18 @@ import {
   getPersistenceDefinition,
   type PersistenceDefinition,
 } from "@/game/content/persistences";
+import {
+  getSecretDefinition,
+  type SecretDefinition,
+} from "@/game/content/secrets";
+import { getActiveSubscene } from "@/game/content/subscenes";
 import { CITY_EVENTS, reconcileCityState } from "@/game/content/world-events";
+import {
+  getCurrentAct,
+  isActCompleted,
+  isV1Complete,
+} from "@/game/engine/acts";
+import { getLocalDateKey } from "@/game/engine/calendar";
 import {
   type ClockAnchor,
   createClockAnchor,
@@ -38,8 +52,8 @@ import {
 } from "@/game/engine/clock";
 import { getDiscoveredClues } from "@/game/engine/clues";
 import { advanceCoreLoop, createSaveSnapshot } from "@/game/engine/core-loop";
+import { executeDialogueChoice } from "@/game/engine/dialogue-choices";
 import { selectDialogueVariant } from "@/game/engine/dialogues";
-import { applyInteractionEffects } from "@/game/engine/effects";
 import {
   executeInteraction,
   getAvailableInteractions,
@@ -78,6 +92,8 @@ export function GameplaySession() {
     useState<KnowledgeDefinition | null>(null);
   const [persistenceToast, setPersistenceToast] =
     useState<PersistenceDefinition | null>(null);
+  const [secretToast, setSecretToast] = useState<SecretDefinition | null>(null);
+  const [completedAct, setCompletedAct] = useState<ActDefinition | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const anchorRef = useRef<ClockAnchor | null>(null);
   const phaseRef = useRef<SessionPhase>("loading");
@@ -107,7 +123,11 @@ export function GameplaySession() {
     }
 
     const nowMs = Date.now();
-    const resetState = resetGameLoop(current);
+    const resetState = resetGameLoop(
+      current,
+      new Date().toISOString(),
+      getLocalDateKey(),
+    );
     anchorRef.current = createClockAnchor(
       resetState.run.remainingSeconds,
       nowMs,
@@ -117,6 +137,7 @@ export function GameplaySession() {
     setActiveDialogue(null);
     setKnowledgeToast(null);
     setPersistenceToast(null);
+    setSecretToast(null);
     setNotice("Nuovo loop avviato alle 23:55.");
     updatePhase("playing");
   }, [persist, updatePhase]);
@@ -288,6 +309,16 @@ export function GameplaySession() {
     return () => window.clearTimeout(timeoutId);
   }, [persistenceToast]);
 
+  useEffect(() => {
+    if (!secretToast) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setSecretToast(null), 5_000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [secretToast]);
+
   async function consumeTime(seconds: number) {
     await applyStep(
       seconds,
@@ -347,6 +378,7 @@ export function GameplaySession() {
       Date.now(),
       CITY_EVENTS,
       interaction.id,
+      getLocalDateKey(),
     );
 
     if (!result.ok) {
@@ -373,6 +405,18 @@ export function GameplaySession() {
       setPersistenceToast(grantedPersistence);
     }
 
+    const discoveredSecretId = result.discoveredSecretIds[0];
+    const discoveredSecret = discoveredSecretId
+      ? getSecretDefinition(discoveredSecretId)
+      : null;
+    if (discoveredSecret) {
+      setSecretToast(discoveredSecret);
+    }
+
+    if (result.completedActId !== null) {
+      setCompletedAct(getActDefinition(result.completedActId) ?? null);
+    }
+
     if (result.ended) {
       await beginReset(result.state);
       return;
@@ -383,11 +427,25 @@ export function GameplaySession() {
 
   async function chooseDialogueOption(choice: DialogueChoice) {
     const current = stateRef.current;
-    if (!current || phaseRef.current !== "playing") {
+    const anchor = anchorRef.current;
+    if (!current || !anchor || phaseRef.current !== "playing") {
       return;
     }
 
-    const effects = applyInteractionEffects(current, choice.effects ?? []);
+    const effects = executeDialogueChoice(
+      current,
+      anchor,
+      Date.now(),
+      CITY_EVENTS,
+      choice,
+      getLocalDateKey(),
+    );
+    if (!effects.ok) {
+      await beginReset(effects.state);
+      return;
+    }
+
+    anchorRef.current = effects.anchor;
     stateRef.current = effects.state;
     setGame(effects.state);
     const grantedPersistenceId = effects.grantedPersistenceIds[0];
@@ -398,10 +456,29 @@ export function GameplaySession() {
       setPersistenceToast(grantedPersistence);
     }
 
+    const discoveredSecretId = effects.discoveredSecretIds[0];
+    const discoveredSecret = discoveredSecretId
+      ? getSecretDefinition(discoveredSecretId)
+      : null;
+    if (discoveredSecret) {
+      setSecretToast(discoveredSecret);
+    }
+
+    if (effects.completedActId !== null) {
+      setCompletedAct(getActDefinition(effects.completedActId) ?? null);
+    }
+
     setActiveDialogue((current) =>
       current ? { ...current, response: choice.response } : current,
     );
-    await applyStep(choice.timeCost, choice.response);
+    setNotice(choice.response);
+
+    if (effects.ended) {
+      await beginReset(effects.state);
+      return;
+    }
+
+    await persist(effects.state);
   }
 
   if (phase === "loading") {
@@ -437,16 +514,27 @@ export function GameplaySession() {
   }
 
   const currentNode = getLocation(game.run.currentLocationId);
+  const activeSubscene = getActiveSubscene(game);
+  const currentAct = getCurrentAct(game);
+  const currentActIsCompleted = currentAct
+    ? isActCompleted(game, currentAct.id)
+    : false;
+  const storyComplete = isV1Complete(game);
   const elapsedSecond = getElapsedSeconds(
     createClockAnchor(game.run.remainingSeconds, 0),
     0,
   );
   const presentCharacters = currentNode
-    ? getCharactersAtLocation(game, currentNode.id, elapsedSecond)
+    ? getCharactersAtLocation(game, currentNode.id, elapsedSecond).filter(
+        (character) =>
+          !activeSubscene ||
+          activeSubscene.visibleCharacterIds.includes(character.id),
+      )
     : [];
-  const observableDetails = currentNode
-    ? getObservableDetails(game, currentNode)
-    : [];
+  const observableDetails =
+    currentNode && !activeSubscene
+      ? getObservableDetails(game, currentNode)
+      : [];
   const isBlackout = game.world.flags.blackout === true;
   const availableInteractions = getAvailableInteractions(game, elapsedSecond);
   const acquiredKnowledge = getAcquiredKnowledge(game);
@@ -461,7 +549,15 @@ export function GameplaySession() {
             Atto corrente
           </p>
           <p className="mt-1 font-display text-xl uppercase tracking-[0.12em] text-text-main">
-            Atto {game.run.currentActId}
+            Atto {game.run.currentActId} · {currentAct?.title}
+          </p>
+          <p className="gameplay__act-question">{currentAct?.question}</p>
+          <p className="gameplay__act-status">
+            {storyComplete
+              ? "Fine V1"
+              : currentActIsCompleted
+                ? "Completato oggi · Il prossimo Atto sarà disponibile domani"
+                : "In corso"}
           </p>
         </div>
         <div className="text-right">
@@ -478,22 +574,26 @@ export function GameplaySession() {
         className={`gameplay__grid ${isBlackout ? "gameplay__grid--blackout" : ""}`}
       >
         <section
-          className={`gameplay__scene gameplay__scene--${currentNode?.scene ?? "square"}`}
+          className={`gameplay__scene gameplay__scene--${activeSubscene ? "basement" : (currentNode?.scene ?? "square")}`}
           aria-labelledby="scene-title"
         >
           <div className="gameplay__scene-image" aria-hidden="true" />
           <div className="gameplay__scene-copy">
             <p className="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-accent-red-strong">
-              {isBlackout ? "Corrente interrotta" : currentNode?.atmosphere}
+              {isBlackout
+                ? "Corrente interrotta"
+                : (activeSubscene?.atmosphere ?? currentNode?.atmosphere)}
             </p>
             <h1
               className="mt-2 font-display text-3xl uppercase tracking-[0.08em] text-text-main sm:text-4xl"
               id="scene-title"
             >
-              {currentNode?.label ?? game.run.currentLocationId}
+              {activeSubscene?.title ??
+                currentNode?.label ??
+                game.run.currentLocationId}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-text-muted">
-              {currentNode?.description}
+              {activeSubscene?.description ?? currentNode?.description}
             </p>
             {observableDetails.map((detail) => (
               <p className="gameplay__observation" key={detail}>
@@ -551,7 +651,11 @@ export function GameplaySession() {
             <div className="space-y-3 p-4 sm:p-5">
               <CityMap
                 currentLocationId={game.run.currentLocationId}
-                disabled={phase !== "playing" || Boolean(activeDialogue)}
+                disabled={
+                  phase !== "playing" ||
+                  Boolean(activeDialogue) ||
+                  Boolean(activeSubscene)
+                }
                 locations={CITY_LOCATIONS}
                 onTravel={(destinationId) => void travel(destinationId)}
               />
@@ -600,6 +704,21 @@ export function GameplaySession() {
         <PersistenceToast
           onClose={() => setPersistenceToast(null)}
           persistence={persistenceToast}
+        />
+      ) : null}
+
+      {secretToast ? (
+        <SecretToast
+          onClose={() => setSecretToast(null)}
+          secret={secretToast}
+        />
+      ) : null}
+
+      {completedAct ? (
+        <ActCompleteOverlay
+          act={completedAct}
+          isV1Complete={storyComplete}
+          onContinue={() => setCompletedAct(null)}
         />
       ) : null}
     </main>
