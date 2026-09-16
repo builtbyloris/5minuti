@@ -1,12 +1,17 @@
-import { PlaceholderPage } from "@/components/ui/placeholder-page";
+import { AccountPage } from "@/components/account/account-page";
 
-export default function LoginPage() {
-  return (
-    <PlaceholderPage
-      description="Il gioco resterà accessibile senza account. L'accesso Google e la sincronizzazione cloud saranno introdotti soltanto nella milestone dedicata."
-      eyebrow="Profilo"
-      icon="login"
-      title="Accedi"
-    />
-  );
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const authResult =
+    params.auth === "success"
+      ? "Accesso completato. Verifica dei progressi in corso."
+      : params.error
+        ? "Accesso non completato. Puoi continuare come ospite."
+        : null;
+
+  return <AccountPage authResult={authResult} />;
 }

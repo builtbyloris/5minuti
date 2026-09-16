@@ -10,9 +10,9 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 8 — Archivio.**
+**Milestone 9 — Account e sincronizzazione.**
 
-Il vertical slice narrativo V1 è giocabile dall'Atto 1 all'Atto 3. L'Archivio è un dossier investigativo derivato dal salvataggio: mostra soltanto Atti, persone, luoghi, indizi, persistenze, segreti e anomalie realmente scoperti. Persone e luoghi visitati vengono registrati nel `GameState`; nessuna informazione dell'Archivio possiede un salvataggio separato.
+Il vertical slice narrativo V1 è giocabile dall'Atto 1 all'Atto 3. La modalità guest resta interamente locale e offline; un account Google opzionale può sincronizzare la stessa copia locale tramite Supabase. Il cloud opera in modalità best-effort e non è mai una dipendenza del gameplay.
 
 ## Stack
 
@@ -37,7 +37,7 @@ npm run dev
 
 Apri [http://localhost:3000](http://localhost:3000).
 
-La modalità guest non richiede variabili d'ambiente. Se in futuro saranno necessarie, copia `.env.example` in `.env.local` e valorizza soltanto le variabili documentate.
+La modalità guest non richiede variabili d'ambiente. Per abilitare account e cloud, copia `.env.example` in `.env.local` e configura soltanto le due variabili pubbliche documentate.
 
 Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indipendente da autenticazione e servizi cloud. Durante il gameplay vengono salvati snapshot coalescenti ogni cinque secondi e snapshot immediati per azioni, navigazione, reset e uscita dalla route; non viene effettuata una scrittura a ogni refresh della UI.
 
@@ -77,6 +77,36 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Durante `/archivio` non viene creato alcun clock: il gameplay riprende dallo snapshot salvato all'uscita da `/gioca`.
 - La sezione Anomalie legge `discoveredAnomalies`, ma la scoperta via gameplay delle anomalie non è ancora implementata.
 
+## Account e sincronizzazione
+
+- Il salvataggio è **local-first**: ogni scrittura completa prima `LocalSaveAdapter`. Errori di rete o sessioni scadute non bloccano il gameplay e non effettuano rollback.
+- Il cloud è una copia best-effort. Le scritture locali vengono aggregate in finestre di 30 secondi; login, risoluzione conflitti, reset account e “Sincronizza ora” producono una sincronizzazione esplicita.
+- Al primo login, un guest save con cloud vuoto viene copiato senza modificarlo. Se esiste solo il cloud, viene importato in locale.
+- Se esistono progressi diversi in entrambe le copie, nessuna viene sovrascritta silenziosamente: il giocatore può unirle, mantenere il dispositivo o usare il cloud. Le ultime due opzioni richiedono conferma.
+- Se locale e cloud condividono lo stesso identificatore di partita guest, il coordinator usa la revision interna della stessa linea per riprendere automaticamente la copia più recente. Revision uguali ma contenuti divergenti, o una partita locale distinta, richiedono il flusso di conflitto.
+- Il merge unisce e deduplica soltanto la progressione monotona: Atti completati, knowledge, indizi, segreti, anomalie, persone e luoghi. `RunState`, world flags e persistenze provengono atomicamente dalla snapshot narrativamente più avanzata; a parità viene preferita quella più recente, con il dispositivo corrente come ultimo tie-break. Le impostazioni restano quelle locali.
+- Gli Atti vengono normalizzati nell’intervallo 1–3 e riconciliati con il gate giornaliero. Non può essere creato un Atto 4.
+- Ogni update cloud usa optimistic concurrency sulla `revision`. Un conflitto ricarica la versione corrente, esegue un solo merge/retry e, in caso di ulteriore errore, lascia intatto il save locale.
+- Logout e scadenza sessione non cancellano il salvataggio locale. Un reset autenticato crea uno stato iniziale locale e tenta di sostituire anche il cloud; se il cloud fallisce, un login successivo genera un conflitto invece di ripristinare silenziosamente i vecchi progressi.
+- Sessione, identità, revision cloud e stato sync restano fuori dal `GameState`, che rimane allo schema v4. Token OAuth e provider token non vengono salvati dal gioco.
+
+## Supabase / Google Auth setup
+
+La modalità guest funziona anche se questa configurazione non viene eseguita.
+
+1. Crea o seleziona un progetto Supabase.
+2. Dal pannello **Connect/API keys**, recupera Project URL e Publishable Key.
+3. Copia `.env.example` in `.env.local` e imposta `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+4. Applica `supabase/migrations/202609160001_create_game_saves.sql` tramite Supabase CLI o SQL Editor.
+5. Verifica che la tabella `game_saves` abbia RLS attivo e policy separate SELECT/INSERT/UPDATE basate su `auth.uid() = user_id`.
+6. In Google Auth Platform crea credenziali OAuth Web e configura audience, branding e gli scope `openid`, email e profilo.
+7. Nel provider Google di Supabase inserisci Client ID e Client Secret. Il secret resta esclusivamente nell’infrastruttura Supabase e non in questo repository.
+8. Nella allow list Supabase aggiungi `http://localhost:3000/auth/callback` per lo sviluppo.
+9. Aggiungi anche `https://<dominio-produzione>/auth/callback` quando esisterà il dominio definitivo e imposta il Site URL corretto.
+10. Avvia l’app e verifica login, callback, creazione della riga cloud, refresh sessione, sincronizzazione e logout.
+
+Il codice applicativo è completo, ma OAuth, RLS e sincronizzazione live richiedono un progetto Supabase e credenziali Google configurati esternamente. Non usare mai secret key, `service_role` o Google Client Secret nel browser.
+
 ## Script
 
 ```bash
@@ -102,11 +132,14 @@ src/
     ui/                AppShell, pulsanti, pannelli e icone
   game/
     archive/           metadata, discovery tracking e view model anti-spoiler
+    cloud/             adapter cloud tipizzato e validazione record Supabase
     engine/            clock, scheduler, Atti, interazioni, condizioni, effetti e persistenze
+    sync/               merge puro, conflitti e coordinator local-first
     content/           Atti, città, routine, dialoghi, knowledge, indizi, segreti e persistenze
     state/             tipi, factory, selettori e transizioni pure
     persistence/       adapter locale, validazione e migrazioni
   lib/                 utility generiche
+    supabase/           client browser/server e configurazione centralizzata
   styles/              design token globali
   test/                setup e test condivisi
 
@@ -114,6 +147,8 @@ public/
   images/
   audio/
 ```
+
+La migration SQL versionata si trova in `supabase/migrations/`. Il callback OAuth è `src/app/auth/callback/route.ts`; `proxy.ts` aggiorna i cookie di sessione secondo il pattern SSR corrente.
 
 I documenti interni di roadmap, specifica e canon narrativo contengono dettagli di produzione e spoiler. Restano disponibili nell'ambiente di sviluppo locale, ma sono intenzionalmente esclusi dal repository pubblico.
 

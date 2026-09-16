@@ -14,8 +14,10 @@ import { GAME_STATE_SCHEMA_VERSION } from "@/game/state/types";
 export const LOCAL_SAVE_KEY = "5minuti:guest-save";
 
 export type StorageLike = Pick<Storage, "getItem" | "removeItem" | "setItem">;
+export type LocalSaveListener = (state: GameState) => void;
 
 export class LocalSaveAdapter implements SaveAdapter {
+  readonly #listeners = new Set<LocalSaveListener>();
   readonly #storage?: StorageLike;
 
   constructor(storage?: StorageLike) {
@@ -87,6 +89,14 @@ export class LocalSaveAdapter implements SaveAdapter {
     }
 
     storage.setItem(LOCAL_SAVE_KEY, JSON.stringify(state));
+    for (const listener of this.#listeners) {
+      listener(state);
+    }
+  }
+
+  subscribe(listener: LocalSaveListener) {
+    this.#listeners.add(listener);
+    return () => this.#listeners.delete(listener);
   }
 
   private getStorage() {

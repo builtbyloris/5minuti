@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAccount } from "@/auth/auth-context";
 import { GameButton } from "@/components/ui/game-button";
 import { Panel } from "@/components/ui/panel";
 import { localSave } from "@/game/persistence/local-save";
@@ -9,6 +10,7 @@ import type { GameState } from "@/game/state/types";
 type ResetStage = "idle" | "first-confirmation" | "final-confirmation";
 
 export function SaveResetPanel() {
+  const { resetProgress, syncState, user } = useAccount();
   const [game, setGame] = useState<GameState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [resetStage, setResetStage] = useState<ResetStage>("idle");
@@ -30,10 +32,17 @@ export function SaveResetPanel() {
   }, []);
 
   async function resetSave() {
-    await localSave.clear();
-    setGame(null);
+    const cloudSynced = await resetProgress();
+    const nextGame = await localSave.load();
+    setGame(nextGame);
     setResetStage("idle");
-    setMessage("Salvataggio locale eliminato. La home mostrerà Nuova partita.");
+    setMessage(
+      user
+        ? cloudSynced
+          ? "Progressi reimpostati sul dispositivo e nel cloud."
+          : "Progressi reimpostati sul dispositivo. Sincronizzazione cloud in attesa."
+        : "Salvataggio locale eliminato. La home mostrerà Nuova partita.",
+    );
   }
 
   return (
@@ -76,13 +85,13 @@ export function SaveResetPanel() {
             className="font-display text-lg uppercase tracking-[0.1em] text-text-main"
             id="save-settings"
           >
-            Salvataggio guest
+            {user ? "Salvataggio sincronizzato" : "Salvataggio guest"}
           </h2>
           <p className="mt-3 text-sm leading-6 text-text-muted">
             {isLoading
               ? "Verifica del salvataggio locale…"
               : game
-                ? `Atto ${game.run.currentActId}, loop ${game.run.loopNumber}. Il reset cancella definitivamente il progresso locale.`
+                ? `Atto ${game.run.currentActId}, loop ${game.run.loopNumber}. ${user ? "Il reset crea una nuova partita e la sincronizza nel cloud." : "Il reset cancella definitivamente il progresso locale."}`
                 : "Nessun salvataggio locale presente."}
           </p>
 
@@ -99,7 +108,9 @@ export function SaveResetPanel() {
             <div className="mt-5 border border-accent-red/40 bg-accent-red/5 p-4">
               <p className="text-sm leading-6 text-text-main">
                 Prima conferma: vuoi preparare la cancellazione completa della
-                partita guest?
+                {user
+                  ? "partita su questo dispositivo e nel cloud?"
+                  : "partita guest?"}
               </p>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <GameButton
@@ -124,7 +135,7 @@ export function SaveResetPanel() {
             <div className="mt-5 border border-accent-red bg-accent-red/10 p-4">
               <p className="text-sm font-medium leading-6 text-text-main">
                 Seconda e ultima conferma. Questa operazione non può essere
-                annullata.
+                annullata. {user ? "Il vecchio cloud verrà sostituito." : ""}
               </p>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <GameButton
@@ -151,6 +162,12 @@ export function SaveResetPanel() {
           >
             {message}
           </p>
+          {user && syncState.status === "error" ? (
+            <p className="mt-2 text-xs leading-5 text-text-muted">
+              Il reset locale è valido; il cloud verrà ritentato senza
+              ripristinare automaticamente i progressi precedenti.
+            </p>
+          ) : null}
         </section>
 
         <GameButton
