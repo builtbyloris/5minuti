@@ -1,4 +1,8 @@
 import { LOOP_DURATION_SECONDS } from "@/game/engine/clock";
+import {
+  advancePersistenceLifecycle,
+  applyPersistencesToFreshRun,
+} from "@/game/engine/persistences";
 import type { GameState, LocationId } from "@/game/state/types";
 
 export const INITIAL_LOCATION_ID: LocationId = "piazza";
@@ -11,7 +15,7 @@ export function resetGameLoop(
     return state;
   }
 
-  return {
+  const baseline = {
     ...state,
     run: {
       ...state.run,
@@ -30,4 +34,6 @@ export function resetGameLoop(
       flags: {},
     },
   };
+
+  return applyPersistencesToFreshRun(advancePersistenceLifecycle(baseline));
 }

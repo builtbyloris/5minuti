@@ -12,6 +12,8 @@ export type InteractionAction =
 export type InteractionEffect =
   | { knowledgeId: string; type: "acquire-knowledge" }
   | { clueId: string; type: "discover-clue" }
+  | { persistenceId: string; type: "grant-persistence" }
+  | { persistenceId: string; type: "remove-persistence" }
   | { key: string; type: "set-run-flag"; value: boolean }
   | { locationId: LocationId; type: "set-location" };
 
@@ -54,6 +56,32 @@ export const INTERACTION_DEFINITIONS: InteractionDefinition[] = [
     label: "Esplora la farmacia",
     result: "Vicino al banco noti una fila di impronte ancora bagnate.",
     timeCost: 8,
+  },
+  {
+    actionType: "use",
+    conditions: [
+      { locationId: "stazione", type: "location" },
+      {
+        key: "interaction:station-explored",
+        type: "run-flag",
+        value: true,
+      },
+      {
+        has: false,
+        persistenceId: "station_token_shifted",
+        type: "persistence",
+      },
+    ],
+    effects: [
+      {
+        persistenceId: "station_token_shifted",
+        type: "grant-persistence",
+      },
+    ],
+    id: "move-station-token",
+    label: "Sposta il gettone",
+    result: "Lasci il gettone sul bordo del muretto, lontano dalla panchina.",
+    timeCost: 4,
   },
   {
     actionType: "explore",

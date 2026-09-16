@@ -15,6 +15,8 @@ export type InteractionExecutionResult =
       acquiredKnowledgeIds: string[];
       anchor: ClockAnchor;
       discoveredClueIds: string[];
+      grantedPersistenceIds: string[];
+      removedPersistenceIds: string[];
       ended: boolean;
       executedEventIds: string[];
       interaction: InteractionDefinition;
@@ -80,6 +82,8 @@ export function executeInteraction(
     acquiredKnowledgeIds: effects.acquiredKnowledgeIds,
     anchor: timed.anchor,
     discoveredClueIds: effects.discoveredClueIds,
+    grantedPersistenceIds: effects.grantedPersistenceIds,
+    removedPersistenceIds: effects.removedPersistenceIds,
     ended: timed.ended,
     executedEventIds: [
       ...synchronized.executedEventIds,

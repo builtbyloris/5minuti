@@ -1,11 +1,17 @@
 import type { InteractionEffect } from "@/game/content/interactions";
 import { discoverClue } from "@/game/engine/clues";
 import { acquireKnowledge } from "@/game/engine/knowledge";
+import {
+  grantPersistence,
+  removePersistence,
+} from "@/game/engine/persistences";
 import type { GameState } from "@/game/state/types";
 
 export type EffectsResult = {
   acquiredKnowledgeIds: string[];
   discoveredClueIds: string[];
+  grantedPersistenceIds: string[];
+  removedPersistenceIds: string[];
   state: GameState;
 };
 
@@ -16,6 +22,8 @@ export function applyInteractionEffects(
   let nextState = state;
   const acquiredKnowledgeIds: string[] = [];
   const discoveredClueIds: string[] = [];
+  const grantedPersistenceIds: string[] = [];
+  const removedPersistenceIds: string[] = [];
 
   for (const effect of effects) {
     if (effect.type === "acquire-knowledge") {
@@ -29,6 +37,18 @@ export function applyInteractionEffects(
       nextState = result.state;
       if (result.discovered) {
         discoveredClueIds.push(effect.clueId);
+      }
+    } else if (effect.type === "grant-persistence") {
+      const result = grantPersistence(nextState, effect.persistenceId);
+      nextState = result.state;
+      if (result.granted) {
+        grantedPersistenceIds.push(effect.persistenceId);
+      }
+    } else if (effect.type === "remove-persistence") {
+      const result = removePersistence(nextState, effect.persistenceId);
+      nextState = result.state;
+      if (result.removed) {
+        removedPersistenceIds.push(effect.persistenceId);
       }
     } else if (effect.type === "set-location") {
       nextState = {
@@ -49,5 +69,11 @@ export function applyInteractionEffects(
     }
   }
 
-  return { acquiredKnowledgeIds, discoveredClueIds, state: nextState };
+  return {
+    acquiredKnowledgeIds,
+    discoveredClueIds,
+    grantedPersistenceIds,
+    removedPersistenceIds,
+    state: nextState,
+  };
 }

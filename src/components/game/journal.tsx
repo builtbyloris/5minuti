@@ -1,12 +1,15 @@
+import { PersistenceList } from "@/components/game/persistence-list";
 import type { ClueDefinition } from "@/game/content/clues";
 import type { KnowledgeDefinition } from "@/game/content/knowledge";
+import type { ActivePersistence } from "@/game/engine/persistences";
 
 type JournalProps = {
   clues: ClueDefinition[];
   knowledge: KnowledgeDefinition[];
+  persistences: ActivePersistence[];
 };
 
-export function Journal({ clues, knowledge }: JournalProps) {
+export function Journal({ clues, knowledge, persistences }: JournalProps) {
   return (
     <details className="journal">
       <summary>
@@ -15,9 +18,12 @@ export function Journal({ clues, knowledge }: JournalProps) {
           Diario
         </span>
         <span>
-          <span aria-hidden="true">{knowledge.length + clues.length}</span>
+          <span aria-hidden="true">
+            {knowledge.length + clues.length + persistences.length}
+          </span>
           <span className="sr-only">
-            {knowledge.length + clues.length} elementi scoperti
+            {knowledge.length + clues.length + persistences.length} elementi
+            scoperti
           </span>
         </span>
       </summary>
@@ -51,6 +57,13 @@ export function Journal({ clues, knowledge }: JournalProps) {
           ) : (
             <p className="journal__empty">Nessun indizio scoperto.</p>
           )}
+        </section>
+        <section aria-labelledby="journal-persistences">
+          <h2 id="journal-persistences">Persistenze</h2>
+          <PersistenceList
+            emptyMessage="Nessuna traccia resiste ancora al reset."
+            persistences={persistences}
+          />
         </section>
       </div>
     </details>

@@ -10,9 +10,9 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 5 — Interazioni, dialoghi e conoscenza.**
+**Milestone 6 — Persistenze tra i loop.**
 
-Il repository contiene lo scaffold tecnico, il design system, il menu principale responsive, l'introduzione narrativa, il game state guest e il core temporale realmente funzionante. La città V1 comprende Piazza, Farmacia, Stazione e Vicolo, con mappa accessibile, eventi temporali, blackout e routine deterministiche. Il giocatore può ora esplorare, osservare, parlare, seguire e usare elementi della scena; conoscenze e indizi persistono nel Diario e una conoscenza acquisita modifica un dialogo in un loop successivo.
+Il repository contiene lo scaffold tecnico, il design system, il menu principale responsive, l'introduzione narrativa, il game state guest e il core temporale realmente funzionante. La città V1 comprende Piazza, Farmacia, Stazione e Vicolo, con mappa accessibile, eventi temporali, blackout e routine deterministiche. Il giocatore può esplorare, osservare, parlare, seguire e usare elementi della scena. La Milestone 6 introduce persistenze fisiche e relazionali data-driven: un oggetto può restare spostato dopo il reset e una diffidenza residua può modificare temporaneamente un dialogo, senza attribuire falsi ricordi agli NPC.
 
 ## Stack
 
@@ -54,6 +54,9 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Le routine NPC sono dati dichiarativi risolti da selettori puri. Una perturbazione può scegliere una variante tramite run flag senza modificare clock o scheduler.
 - I costi M5 sono dati di balancing: Esplora 7–8 s, Osserva 5 s, Parla 10 s, Segui 15 s e Usa 3 s. Ogni costo passa dal core loop autorevole.
 - Knowledge e indizi sono progressioni distinte e persistenti. Lo schema save v2 aggiunge `discoveredClues`; i salvataggi v1 vengono migrati automaticamente.
+- Le persistenze sono distinte dalla knowledge: descrivono alterazioni residue del mondo o delle relazioni, non ciò che il protagonista sa. Sono definite come contenuti data-driven e applicate al nuovo baseline dopo il reset.
+- `remainingLoops` include il loop corrente. Una persistenza con valore `2` vive nel loop di creazione e nel successivo, poi viene rimossa al reset seguente. L'assenza del campo indica una persistenza senza scadenza.
+- I save restano allo schema v2, che conteneva già il contratto necessario. Al caricamento, ID rimossi, tipi incoerenti e duplicati vengono scartati; gli effetti derivati vengono ricostruiti in modo idempotente.
 
 ## Script
 
@@ -79,8 +82,8 @@ src/
     game/              menu, intro, timer, reset e shell gameplay
     ui/                AppShell, pulsanti, pannelli e icone
   game/
-    engine/            clock, scheduler, interazioni, condizioni ed effetti
-    content/           città, routine, dialoghi, knowledge e indizi data-driven
+    engine/            clock, scheduler, interazioni, condizioni, effetti e persistenze
+    content/           città, routine, dialoghi, knowledge, indizi e persistenze data-driven
     state/             tipi, factory, selettori e transizioni pure
     persistence/       adapter locale, validazione e migrazioni
   lib/                 utility generiche

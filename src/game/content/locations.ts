@@ -81,6 +81,14 @@ export function getObservableDetails(state: GameState, location: CityLocation) {
     details.push("Un annuncio incompleto riecheggia dagli altoparlanti.");
   }
 
+  if (location.id === "stazione") {
+    details.push(
+      state.world.flags["persistent:station-token-shifted"]
+        ? "Il gettone è ancora sul bordo del muretto, dove lo avevi lasciato."
+        : "Un piccolo gettone metallico è caduto vicino alla panchina.",
+    );
+  }
+
   if (location.id === "stazione" && state.world.flags["station-train-passes"]) {
     details.push(
       "Sulle rotaie resta la vibrazione di un treno appena passato.",

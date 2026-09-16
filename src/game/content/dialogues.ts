@@ -1,7 +1,9 @@
 import type { CharacterId } from "@/game/content/characters";
+import type { InteractionEffect } from "@/game/content/interactions";
 import type { GameCondition } from "@/game/engine/conditions";
 
 export type DialogueChoice = {
+  effects?: InteractionEffect[];
   id: string;
   label: string;
   response: string;
@@ -38,6 +40,19 @@ export const DIALOGUE_DEFINITIONS: DialogueDefinition[] = [
               "«Ancora pochi minuti.» Il farmacista torna a sistemare il banco.",
             timeCost: 10,
           },
+          {
+            effects: [
+              {
+                persistenceId: "pharmacist_residual_wariness",
+                type: "grant-persistence",
+              },
+            ],
+            id: "press-for-an-answer",
+            label: "Insistere per una risposta",
+            response:
+              "Il farmacista si irrigidisce. «Le ho già detto quello che so.»",
+            timeCost: 10,
+          },
         ],
         id: "base",
         opening: "«Serve qualcosa?»",
@@ -51,6 +66,19 @@ export const DIALOGUE_DEFINITIONS: DialogueDefinition[] = [
               "«La vedo entrare a quell'ora. Non significa che sappia perché.»",
             timeCost: 10,
           },
+          {
+            effects: [
+              {
+                persistenceId: "pharmacist_residual_wariness",
+                type: "grant-persistence",
+              },
+            ],
+            id: "press-for-an-answer-known",
+            label: "Insistere perché dica il resto",
+            response:
+              "Il farmacista si irrigidisce. «Non c'è altro. E smetta di fissarmi così.»",
+            timeCost: 10,
+          },
         ],
         conditions: [
           {
@@ -62,6 +90,55 @@ export const DIALOGUE_DEFINITIONS: DialogueDefinition[] = [
         id: "knows-elena-time",
         opening: "Il farmacista segue il tuo sguardo verso l'orologio.",
         priority: 1,
+      },
+      {
+        choices: [
+          {
+            id: "ask-closing-time-wary",
+            label: "Chiedere fino a quando resta aperto",
+            response:
+              "«Ancora pochi minuti.» La risposta arriva senza che ti guardi.",
+            timeCost: 10,
+          },
+        ],
+        conditions: [
+          {
+            has: true,
+            persistenceId: "pharmacist_residual_wariness",
+            type: "persistence",
+          },
+        ],
+        id: "residual-wariness",
+        opening:
+          "Il farmacista ti squadra per un istante, come davanti a un pericolo che non sa nominare.",
+        priority: 2,
+      },
+      {
+        choices: [
+          {
+            id: "ask-elena-time-wary",
+            label: "Chiedere di Elena e delle 23:57",
+            response:
+              "«La vedo entrare a quell'ora.» Fa una pausa. «Non significa che debba fidarmi di lei.»",
+            timeCost: 10,
+          },
+        ],
+        conditions: [
+          {
+            has: true,
+            knowledgeId: "elena_enters_pharmacy_2357",
+            type: "knowledge",
+          },
+          {
+            has: true,
+            persistenceId: "pharmacist_residual_wariness",
+            type: "persistence",
+          },
+        ],
+        id: "knows-elena-time-and-wary",
+        opening:
+          "Il farmacista segue il tuo sguardo verso l'orologio, ma tiene una mano sotto il banco.",
+        priority: 3,
       },
     ],
   },

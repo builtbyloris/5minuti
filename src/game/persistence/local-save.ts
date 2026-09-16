@@ -1,3 +1,4 @@
+import { reconcilePersistences } from "@/game/engine/persistences";
 import {
   getSaveSchemaVersion,
   migrateSave,
@@ -52,7 +53,16 @@ export class LocalSaveAdapter implements SaveAdapter {
         storage.removeItem(LOCAL_SAVE_KEY);
       }
 
-      return state;
+      if (!state) {
+        return null;
+      }
+
+      const reconciled = reconcilePersistences(state);
+      if (reconciled !== state) {
+        storage.setItem(LOCAL_SAVE_KEY, JSON.stringify(reconciled));
+      }
+
+      return reconciled;
     } catch {
       storage.removeItem(LOCAL_SAVE_KEY);
       return null;

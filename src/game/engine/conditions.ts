@@ -1,4 +1,5 @@
 import type { CharacterId } from "@/game/content/characters";
+import { hasPersistence } from "@/game/engine/persistences";
 import { getCharactersAtLocation } from "@/game/engine/routines";
 import type { GameState, LocationId } from "@/game/state/types";
 
@@ -6,6 +7,7 @@ export type GameCondition =
   | { locationId: LocationId; type: "location" }
   | { characterId: CharacterId; type: "character-present" }
   | { has: boolean; knowledgeId: string; type: "knowledge" }
+  | { has: boolean; persistenceId: string; type: "persistence" }
   | { key: string; type: "run-flag"; value: boolean }
   | { key: string; type: "world-flag"; value: boolean }
   | {
@@ -33,6 +35,8 @@ export function evaluateCondition(
         state.progression.knowledge.includes(condition.knowledgeId) ===
         condition.has
       );
+    case "persistence":
+      return hasPersistence(state, condition.persistenceId) === condition.has;
     case "run-flag":
       return state.run.runFlags[condition.key] === condition.value;
     case "world-flag":

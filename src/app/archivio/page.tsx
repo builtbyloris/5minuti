@@ -1,12 +1,5 @@
-import { PlaceholderPage } from "@/components/ui/placeholder-page";
+import { PersistenceArchive } from "@/components/archive/persistence-archive";
 
 export default function ArchivePage() {
-  return (
-    <PlaceholderPage
-      description="Indizi, persone e luoghi compariranno qui solo dopo essere stati scoperti. L'Archivio funzionale non fa parte di questa milestone."
-      eyebrow="Dossier"
-      icon="archive"
-      title="Archivio"
-    />
-  );
+  return <PersistenceArchive />;
 }

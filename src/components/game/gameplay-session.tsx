@@ -7,6 +7,7 @@ import { CountdownTimer } from "@/components/game/countdown-timer";
 import { DialogueBox } from "@/components/game/dialogue-box";
 import { Journal } from "@/components/game/journal";
 import { KnowledgeToast } from "@/components/game/knowledge-toast";
+import { PersistenceToast } from "@/components/game/persistence-toast";
 import { ResetOverlay } from "@/components/game/reset-overlay";
 import { GameButton } from "@/components/ui/game-button";
 import { Panel } from "@/components/ui/panel";
@@ -25,6 +26,10 @@ import {
   getLocation,
   getObservableDetails,
 } from "@/game/content/locations";
+import {
+  getPersistenceDefinition,
+  type PersistenceDefinition,
+} from "@/game/content/persistences";
 import { CITY_EVENTS, reconcileCityState } from "@/game/content/world-events";
 import {
   type ClockAnchor,
@@ -34,12 +39,17 @@ import {
 import { getDiscoveredClues } from "@/game/engine/clues";
 import { advanceCoreLoop, createSaveSnapshot } from "@/game/engine/core-loop";
 import { selectDialogueVariant } from "@/game/engine/dialogues";
+import { applyInteractionEffects } from "@/game/engine/effects";
 import {
   executeInteraction,
   getAvailableInteractions,
 } from "@/game/engine/interactions";
 import { getAcquiredKnowledge } from "@/game/engine/knowledge";
 import { navigateToNode } from "@/game/engine/navigation";
+import {
+  getActivePersistences,
+  reconcilePersistences,
+} from "@/game/engine/persistences";
 import { resetGameLoop } from "@/game/engine/reset";
 import { getCharactersAtLocation } from "@/game/engine/routines";
 import { localSave } from "@/game/persistence/local-save";
@@ -66,6 +76,8 @@ export function GameplaySession() {
   );
   const [knowledgeToast, setKnowledgeToast] =
     useState<KnowledgeDefinition | null>(null);
+  const [persistenceToast, setPersistenceToast] =
+    useState<PersistenceDefinition | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const anchorRef = useRef<ClockAnchor | null>(null);
   const phaseRef = useRef<SessionPhase>("loading");
@@ -104,6 +116,7 @@ export function GameplaySession() {
     resetInProgressRef.current = false;
     setActiveDialogue(null);
     setKnowledgeToast(null);
+    setPersistenceToast(null);
     setNotice("Nuovo loop avviato alle 23:55.");
     updatePhase("playing");
   }, [persist, updatePhase]);
@@ -203,7 +216,9 @@ export function GameplaySession() {
           return;
         }
 
-        const reconciledGame = reconcileCityState(savedGame);
+        const reconciledGame = reconcilePersistences(
+          reconcileCityState(savedGame),
+        );
         stateRef.current = reconciledGame;
         lastSavedRemainingRef.current = reconciledGame.run.remainingSeconds;
         anchorRef.current = createClockAnchor(
@@ -262,6 +277,16 @@ export function GameplaySession() {
 
     return () => window.clearTimeout(timeoutId);
   }, [knowledgeToast]);
+
+  useEffect(() => {
+    if (!persistenceToast) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setPersistenceToast(null), 5_000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [persistenceToast]);
 
   async function consumeTime(seconds: number) {
     await applyStep(
@@ -340,6 +365,14 @@ export function GameplaySession() {
       setKnowledgeToast(acquired);
     }
 
+    const grantedPersistenceId = result.grantedPersistenceIds[0];
+    const grantedPersistence = grantedPersistenceId
+      ? getPersistenceDefinition(grantedPersistenceId)
+      : null;
+    if (grantedPersistence) {
+      setPersistenceToast(grantedPersistence);
+    }
+
     if (result.ended) {
       await beginReset(result.state);
       return;
@@ -349,6 +382,22 @@ export function GameplaySession() {
   }
 
   async function chooseDialogueOption(choice: DialogueChoice) {
+    const current = stateRef.current;
+    if (!current || phaseRef.current !== "playing") {
+      return;
+    }
+
+    const effects = applyInteractionEffects(current, choice.effects ?? []);
+    stateRef.current = effects.state;
+    setGame(effects.state);
+    const grantedPersistenceId = effects.grantedPersistenceIds[0];
+    const grantedPersistence = grantedPersistenceId
+      ? getPersistenceDefinition(grantedPersistenceId)
+      : null;
+    if (grantedPersistence) {
+      setPersistenceToast(grantedPersistence);
+    }
+
     setActiveDialogue((current) =>
       current ? { ...current, response: choice.response } : current,
     );
@@ -402,6 +451,7 @@ export function GameplaySession() {
   const availableInteractions = getAvailableInteractions(game, elapsedSecond);
   const acquiredKnowledge = getAcquiredKnowledge(game);
   const discoveredClues = getDiscoveredClues(game);
+  const activePersistences = getActivePersistences(game);
 
   return (
     <main className="gameplay" id="main-content">
@@ -491,7 +541,11 @@ export function GameplaySession() {
             />
           ) : null}
 
-          <Journal clues={discoveredClues} knowledge={acquiredKnowledge} />
+          <Journal
+            clues={discoveredClues}
+            knowledge={acquiredKnowledge}
+            persistences={activePersistences}
+          />
 
           <Panel eyebrow="Percorsi" title="Mappa della città">
             <div className="space-y-3 p-4 sm:p-5">
@@ -539,6 +593,13 @@ export function GameplaySession() {
         <KnowledgeToast
           knowledge={knowledgeToast}
           onClose={() => setKnowledgeToast(null)}
+        />
+      ) : null}
+
+      {persistenceToast ? (
+        <PersistenceToast
+          onClose={() => setPersistenceToast(null)}
+          persistence={persistenceToast}
         />
       ) : null}
     </main>
