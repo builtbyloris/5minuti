@@ -1,12 +1,15 @@
-import { PlaceholderPage } from "@/components/ui/placeholder-page";
+import { PlayReady } from "@/components/game/play-ready";
+import { AppShell } from "@/components/ui/app-shell";
 
 export default function PlayPage() {
   return (
-    <PlaceholderPage
-      description="Il primo loop inizierà qui dopo l'introduzione del GameState. Nessun progresso o salvataggio viene ancora creato."
-      eyebrow="Loop 00"
-      icon="play"
-      title="Nuova partita"
-    />
+    <AppShell>
+      <main
+        className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8"
+        id="main-content"
+      >
+        <PlayReady />
+      </main>
+    </AppShell>
   );
 }

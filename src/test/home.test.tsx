@@ -1,9 +1,18 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "@/app/page";
+import { localSave } from "@/game/persistence/local-save";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
+beforeEach(async () => {
+  await localSave.clear();
+});
 
 describe("menu principale", () => {
-  it("presenta il concept e tutte le destinazioni previste", () => {
+  it("presenta il concept e tutte le destinazioni previste", async () => {
     render(<Home />);
 
     expect(
@@ -14,8 +23,11 @@ describe("menu principale", () => {
     expect(screen.getByText("La città si resetta.")).toBeDefined();
     expect(screen.getByText("Tu ricordi.")).toBeDefined();
 
+    expect(
+      await screen.findByRole("button", { name: "Nuova partita" }),
+    ).toBeDefined();
+
     const expectedLinks = [
-      ["Nuova partita", "/gioca"],
       ["La Storia", "/storia"],
       ["Archivio", "/archivio"],
       ["Accedi con Google", "/login"],

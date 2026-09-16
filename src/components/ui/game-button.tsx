@@ -6,6 +6,7 @@ type CommonProps = {
   children: ReactNode;
   className?: string;
   icon?: IconName;
+  nowrap?: boolean;
   variant?: "primary" | "secondary" | "quiet";
 };
 
@@ -32,6 +33,7 @@ export function GameButton({
   children,
   className = "",
   icon,
+  nowrap = false,
   variant = "secondary",
   ...props
 }: GameButtonProps) {
@@ -49,8 +51,13 @@ export function GameButton({
           name={icon}
         />
       ) : null}
-      <span className="flex-1">{children}</span>
-      <span aria-hidden="true" className="font-mono text-xs opacity-45">
+      <span className={`flex-1 ${nowrap ? "whitespace-nowrap" : ""}`}>
+        {children}
+      </span>
+      <span
+        aria-hidden="true"
+        className={`font-mono text-xs opacity-45 ${nowrap ? "hidden sm:inline" : ""}`}
+      >
         / /
       </span>
     </>

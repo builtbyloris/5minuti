@@ -10,9 +10,9 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 1 — Design system e menu principale.**
+**Milestone 2 — Introduzione e game state.**
 
-Il repository contiene lo scaffold tecnico, i controlli di qualità, il design system base e il menu principale responsive. Le route secondarie sono placeholder intenzionali: gameplay, stato di gioco, salvataggio e autenticazione saranno sviluppati nelle milestone successive.
+Il repository contiene lo scaffold tecnico, il design system, il menu principale responsive, l'introduzione narrativa e il primo modello dati centrale. Le partite guest vengono validate e salvate localmente nel browser; gameplay, timer e sistemi narrativi interattivi restano intenzionalmente fuori da questa milestone.
 
 ## Stack
 
@@ -37,7 +37,9 @@ npm run dev
 
 Apri [http://localhost:3000](http://localhost:3000).
 
-La Milestone 0 non richiede variabili d'ambiente. Se in futuro saranno necessarie, copia `.env.example` in `.env.local` e valorizza soltanto le variabili documentate.
+La modalità guest e la Milestone 2 non richiedono variabili d'ambiente. Se in futuro saranno necessarie, copia `.env.example` in `.env.local` e valorizza soltanto le variabili documentate.
+
+Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indipendente da autenticazione e servizi cloud. Le scritture avvengono soltanto durante transizioni esplicite — creazione della partita e completamento dell'introduzione — quindi non è necessario un ciclo di autosave o debounce in questa milestone.
 
 ## Script
 
@@ -60,13 +62,13 @@ src/
   app/                 routing e pagine Next.js
   components/
     archive/           UI dell'Archivio
-    game/              menu e futura UI di gioco
+    game/              menu, intro e UI del flusso guest
     ui/                AppShell, pulsanti, pannelli e icone
   game/
     engine/            clock, scheduler e reducer
     content/           Atti e contenuti data-driven
-    state/             tipi e stato centrale
-    persistence/       salvataggi e migrazioni
+    state/             tipi, factory, selettori e transizioni pure
+    persistence/       adapter locale, validazione e migrazioni
   lib/                 utility generiche
   styles/              design token globali
   test/                setup e test condivisi

@@ -1,12 +1,16 @@
-import { PlaceholderPage } from "@/components/ui/placeholder-page";
+import { IntroSequence } from "@/components/game/intro-sequence";
+import { AppShell } from "@/components/ui/app-shell";
 
-export default function StoryPage() {
+type StoryPageProps = {
+  searchParams: Promise<{ mode?: string }>;
+};
+
+export default async function StoryPage({ searchParams }: StoryPageProps) {
+  const { mode } = await searchParams;
+
   return (
-    <PlaceholderPage
-      description="La sequenza introduttiva sarà costruita nella prossima milestone. Per ora questa route garantisce una navigazione completa e coerente."
-      eyebrow="Archivio narrativo"
-      icon="book"
-      title="La Storia"
-    />
+    <AppShell>
+      <IntroSequence mode={mode === "new" ? "first-run" : "replay"} />
+    </AppShell>
   );
 }

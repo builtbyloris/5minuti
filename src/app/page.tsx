@@ -1,4 +1,4 @@
-import { MainMenu } from "@/components/game/main-menu";
+import { GameEntryMenu } from "@/components/game/game-entry-menu";
 import { AppShell } from "@/components/ui/app-shell";
 import { Icon } from "@/components/ui/icon";
 
@@ -41,7 +41,7 @@ export default function Home() {
         </section>
 
         <div className="w-full justify-self-end pb-4 lg:pb-0">
-          <MainMenu primaryAction="new" />
+          <GameEntryMenu />
           <p className="mt-4 text-center font-mono text-[0.6rem] uppercase tracking-[0.18em] text-text-muted/70">
             Ogni scelta consuma tempo
           </p>

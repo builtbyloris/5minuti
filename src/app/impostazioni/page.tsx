@@ -1,12 +1,15 @@
-import { PlaceholderPage } from "@/components/ui/placeholder-page";
+import { SaveResetPanel } from "@/components/game/save-reset-panel";
+import { AppShell } from "@/components/ui/app-shell";
 
 export default function SettingsPage() {
   return (
-    <PlaceholderPage
-      description="Le preferenze audio, movimento e accessibilità saranno disponibili quando i relativi sistemi verranno implementati."
-      eyebrow="Sistema"
-      icon="settings"
-      title="Impostazioni"
-    />
+    <AppShell>
+      <main
+        className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8"
+        id="main-content"
+      >
+        <SaveResetPanel />
+      </main>
+    </AppShell>
   );
 }
