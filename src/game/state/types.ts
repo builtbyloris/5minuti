@@ -2,7 +2,7 @@ export const GAME_STATE_SCHEMA_VERSION = 1 as const;
 
 export type ActId = number;
 
-export type LocationId = "piazza";
+export type LocationId = string;
 
 export type RelationshipState = "unknown" | "neutral" | "trusted" | "hostile";
 

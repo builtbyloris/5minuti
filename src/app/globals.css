@@ -185,6 +185,107 @@ button {
   opacity: 0.72;
 }
 
+.gameplay {
+  display: flex;
+  min-height: 100svh;
+  flex-direction: column;
+}
+
+.gameplay__header {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(7, 11, 18, 0.72);
+  padding: 0.75rem 1.25rem;
+  backdrop-filter: blur(12px);
+}
+
+.gameplay__grid {
+  display: grid;
+  flex: 1;
+}
+
+.gameplay__scene {
+  position: relative;
+  display: flex;
+  min-height: 19rem;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-main);
+}
+
+.gameplay__scene-image {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(180deg, rgba(7, 11, 18, 0.08), rgba(7, 11, 18, 0.92)),
+    url("/images/scene-placeholder.svg");
+  background-position: center;
+  background-size: cover;
+  filter: saturate(0.7) contrast(1.08);
+}
+
+.gameplay__scene-copy {
+  position: relative;
+  z-index: 1;
+  padding: 1.5rem 1.25rem;
+}
+
+.gameplay__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: rgba(7, 11, 18, 0.88);
+  padding: 1.5rem 1.25rem 2rem;
+}
+
+.gameplay-timer {
+  border-left: 1px solid rgba(255, 77, 77, 0.55);
+  padding-left: 1.25rem;
+}
+
+.reset-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 2rem;
+  background:
+    radial-gradient(circle, rgba(88, 166, 255, 0.1), transparent 42%),
+    rgba(7, 11, 18, 0.97);
+  text-align: center;
+  animation: reset-overlay-in 240ms ease-out;
+}
+
+.reset-overlay__line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 77, 77, 0.4);
+  box-shadow: 0 0 24px rgba(255, 77, 77, 0.35);
+}
+
+@keyframes reset-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 .app-shell__scene {
   z-index: -3;
   background-image: url("/images/scene-placeholder.svg");
@@ -256,6 +357,25 @@ button {
   .intro__copy {
     align-self: center;
     padding: 3rem 4rem;
+  }
+
+  .gameplay__grid {
+    grid-template-columns: minmax(0, 1.55fr) minmax(23rem, 0.7fr);
+  }
+
+  .gameplay__scene {
+    min-height: calc(100svh - 4.5rem);
+    border-right: 1px solid var(--border-subtle);
+    border-bottom: 0;
+  }
+
+  .gameplay__scene-copy {
+    padding: 3rem;
+  }
+
+  .gameplay__controls {
+    justify-content: center;
+    padding: 2.5rem;
   }
 }
 

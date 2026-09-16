@@ -10,9 +10,9 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 2 — Introduzione e game state.**
+**Milestone 3 — Core loop da cinque minuti.**
 
-Il repository contiene lo scaffold tecnico, il design system, il menu principale responsive, l'introduzione narrativa e il primo modello dati centrale. Le partite guest vengono validate e salvate localmente nel browser; gameplay, timer e sistemi narrativi interattivi restano intenzionalmente fuori da questa milestone.
+Il repository contiene lo scaffold tecnico, il design system, il menu principale responsive, l'introduzione narrativa, il game state guest e il core temporale realmente funzionante. La shell gameplay dimostra clock, scheduler, azioni temporali, navigazione generica e reset senza introdurre la città o i contenuti narrativi delle milestone successive.
 
 ## Stack
 
@@ -37,9 +37,18 @@ npm run dev
 
 Apri [http://localhost:3000](http://localhost:3000).
 
-La modalità guest e la Milestone 2 non richiedono variabili d'ambiente. Se in futuro saranno necessarie, copia `.env.example` in `.env.local` e valorizza soltanto le variabili documentate.
+La modalità guest non richiede variabili d'ambiente. Se in futuro saranno necessarie, copia `.env.example` in `.env.local` e valorizza soltanto le variabili documentate.
 
-Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indipendente da autenticazione e servizi cloud. Le scritture avvengono soltanto durante transizioni esplicite — creazione della partita e completamento dell'introduzione — quindi non è necessario un ciclo di autosave o debounce in questa milestone.
+Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indipendente da autenticazione e servizi cloud. Durante il gameplay vengono salvati snapshot coalescenti ogni cinque secondi e snapshot immediati per azioni, navigazione, reset e uscita dalla route; non viene effettuata una scrittura a ogni refresh della UI.
+
+## Policy temporale
+
+- Il loop dura esattamente 300 secondi: `23:55:00 → 00:00:00`.
+- Un unico clock deriva il tempo da un anchor millisecondico e dal timestamp corrente. Il refresh React richiede soltanto una nuova lettura e non incrementa o decrementa il tempo.
+- La tab in background non mette in pausa il gioco. Al ritorno vengono recuperati tempo ed eventi attraversati.
+- Uscendo volontariamente da `/gioca`, il tempo corrente viene salvato e il clock viene sospeso.
+- Al rientro o dopo un reload viene creato un nuovo anchor dallo snapshot salvato. Non viene simulata progressione offline fuori dalla route gameplay.
+- Lo scheduler usa esclusivamente secondi trascorsi dall'inizio del loop: `0 = 23:55:00`, `300 = 00:00:00`. Gli eventi vengono processati nell'intervallo `(precedente, corrente]`.
 
 ## Script
 
@@ -62,10 +71,10 @@ src/
   app/                 routing e pagine Next.js
   components/
     archive/           UI dell'Archivio
-    game/              menu, intro e UI del flusso guest
+    game/              menu, intro, timer, reset e shell gameplay
     ui/                AppShell, pulsanti, pannelli e icone
   game/
-    engine/            clock, scheduler e reducer
+    engine/            clock, core loop, scheduler, reset e navigazione
     content/           Atti e contenuti data-driven
     state/             tipi, factory, selettori e transizioni pure
     persistence/       adapter locale, validazione e migrazioni

@@ -81,7 +81,8 @@ export function validateGameState(value: unknown): GameState | null {
     typeof run.currentActId !== "number" ||
     !Number.isInteger(run.currentActId) ||
     run.currentActId < 1 ||
-    run.currentLocationId !== "piazza" ||
+    typeof run.currentLocationId !== "string" ||
+    run.currentLocationId.length === 0 ||
     typeof run.loopNumber !== "number" ||
     !Number.isInteger(run.loopNumber) ||
     run.loopNumber < 1 ||

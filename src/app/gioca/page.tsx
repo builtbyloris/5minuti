@@ -1,15 +1,10 @@
-import { PlayReady } from "@/components/game/play-ready";
+import { GameplaySession } from "@/components/game/gameplay-session";
 import { AppShell } from "@/components/ui/app-shell";
 
 export default function PlayPage() {
   return (
-    <AppShell>
-      <main
-        className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8"
-        id="main-content"
-      >
-        <PlayReady />
-      </main>
+    <AppShell mode="menu">
+      <GameplaySession />
     </AppShell>
   );
 }
