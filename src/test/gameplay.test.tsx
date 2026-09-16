@@ -34,20 +34,18 @@ describe("GameplaySession", () => {
     });
     expect(screen.getByText("04:59")).toBeDefined();
 
-    fireEvent.click(screen.getByRole("button", { name: "Attendi 15 secondi" }));
+    fireEvent.click(screen.getByRole("button", { name: "Aspetta 15 secondi" }));
     await flushPromises();
     expect(screen.getByText("04:44")).toBeDefined();
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Vai a Nodo adiacente · 12s",
+        name: /FarmaciaRaggiungibile · 15s/,
       }),
     );
     await flushPromises();
-    expect(
-      screen.getByRole("heading", { name: "Nodo adiacente" }),
-    ).toBeDefined();
-    expect(screen.getByText("04:32")).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Farmacia" })).toBeDefined();
+    expect(screen.getByText("04:29")).toBeDefined();
   });
 
   it("mostra il reset una volta e riparte dal loop successivo", async () => {
@@ -91,5 +89,26 @@ describe("GameplaySession", () => {
     render(<GameplaySession />);
     await flushPromises();
     expect(screen.getByText("04:20")).toBeDefined();
+  });
+
+  it("salva subito il blackout e aggiorna la scena al secondo 180", async () => {
+    const state = createInitialGameState({ id: "guest-test" });
+    await localSave.save({
+      ...state,
+      run: { ...state.run, remainingSeconds: 121 },
+    });
+    render(<GameplaySession />);
+    await flushPromises();
+
+    expect(screen.queryByText("Corrente interrotta")).toBeNull();
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Corrente interrotta")).toBeDefined();
+    expect((await localSave.load())?.world.flags.blackout).toBe(true);
   });
 });

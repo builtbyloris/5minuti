@@ -10,9 +10,9 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 3 — Core loop da cinque minuti.**
+**Milestone 4 — Città viva e routine NPC.**
 
-Il repository contiene lo scaffold tecnico, il design system, il menu principale responsive, l'introduzione narrativa, il game state guest e il core temporale realmente funzionante. La shell gameplay dimostra clock, scheduler, azioni temporali, navigazione generica e reset senza introdurre la città o i contenuti narrativi delle milestone successive.
+Il repository contiene lo scaffold tecnico, il design system, il menu principale responsive, l'introduzione narrativa, il game state guest e il core temporale realmente funzionante. La città V1 comprende Piazza, Farmacia, Stazione e Vicolo, con mappa accessibile, eventi temporali, blackout e routine deterministiche per Elena, Uomo in Rosso, Farmacista e Controllore.
 
 ## Stack
 
@@ -49,6 +49,9 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Uscendo volontariamente da `/gioca`, il tempo corrente viene salvato e il clock viene sospeso.
 - Al rientro o dopo un reload viene creato un nuovo anchor dallo snapshot salvato. Non viene simulata progressione offline fuori dalla route gameplay.
 - Lo scheduler usa esclusivamente secondi trascorsi dall'inizio del loop: `0 = 23:55:00`, `300 = 00:00:00`. Gli eventi vengono processati nell'intervallo `(precedente, corrente]`.
+- La topologia è centrata sulla Piazza: Farmacia 15 s, Stazione 20 s e Vicolo 12 s. Le route inverse hanno lo stesso costo; i nodi periferici non sono collegati direttamente.
+- Il blackout avviene al secondo trascorso 180 (`23:58:00`) anche fuori scena o con la scheda in background. I world flag della città sono relativi al loop e vengono puliti dal reset.
+- Le routine NPC sono dati dichiarativi risolti da selettori puri. Una perturbazione può scegliere una variante tramite run flag senza modificare clock o scheduler.
 
 ## Script
 
@@ -75,7 +78,7 @@ src/
     ui/                AppShell, pulsanti, pannelli e icone
   game/
     engine/            clock, core loop, scheduler, reset e navigazione
-    content/           Atti e contenuti data-driven
+    content/           città, eventi e routine NPC data-driven
     state/             tipi, factory, selettori e transizioni pure
     persistence/       adapter locale, validazione e migrazioni
   lib/                 utility generiche

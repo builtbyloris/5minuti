@@ -25,5 +25,9 @@ export function resetGameLoop(
       revision: state.metadata.revision + 1,
       updatedAt: now,
     },
+    world: {
+      ...state.world,
+      flags: {},
+    },
   };
 }

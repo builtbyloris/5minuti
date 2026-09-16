@@ -182,6 +182,7 @@ describe("reset deterministico", () => {
         remainingSeconds: 0,
         runFlags: { temporary: true },
       },
+      world: { flags: { blackout: true } },
     };
 
     const reset = resetGameLoop(ended, "2026-09-16T10:00:00.000Z");
@@ -191,6 +192,7 @@ describe("reset deterministico", () => {
     expect(reset.run.remainingSeconds).toBe(300);
     expect(reset.run.currentLocationId).toBe("piazza");
     expect(reset.run.runFlags).toEqual({});
+    expect(reset.world.flags).toEqual({});
     expect(reset.progression).toEqual(ended.progression);
     expect(duplicateAttempt).toBe(reset);
   });

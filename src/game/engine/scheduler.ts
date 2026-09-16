@@ -18,6 +18,11 @@ export type SchedulerEffect =
   | {
       eventId: string;
       type: "cancel-event";
+    }
+  | {
+      key: string;
+      type: "set-world-flag";
+      value: boolean;
     };
 
 export type ScheduledEvent = {
@@ -47,12 +52,15 @@ function conditionsPass(
 
 function applyEffects(state: GameState, effects: SchedulerEffect[]) {
   const runFlags = { ...state.run.runFlags };
+  const worldFlags = { ...state.world.flags };
 
   for (const effect of effects) {
     if (effect.type === "set-run-flag") {
       runFlags[effect.key] = effect.value;
-    } else {
+    } else if (effect.type === "cancel-event") {
       runFlags[`${CANCELLED_PREFIX}${effect.eventId}`] = true;
+    } else {
+      worldFlags[effect.key] = effect.value;
     }
   }
 
@@ -61,6 +69,10 @@ function applyEffects(state: GameState, effects: SchedulerEffect[]) {
     run: {
       ...state.run,
       runFlags,
+    },
+    world: {
+      ...state.world,
+      flags: worldFlags,
     },
   };
 }

@@ -1,16 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CityMap } from "@/components/game/city-map";
 import { CountdownTimer } from "@/components/game/countdown-timer";
 import { ResetOverlay } from "@/components/game/reset-overlay";
 import { GameButton } from "@/components/ui/game-button";
 import { Panel } from "@/components/ui/panel";
-import { CORE_TECHNICAL_EVENTS } from "@/game/content/core-events";
-import { CORE_LOCATION_FIXTURE } from "@/game/content/core-locations";
-import { type ClockAnchor, createClockAnchor } from "@/game/engine/clock";
+import {
+  CITY_LOCATIONS,
+  getLocation,
+  getObservableDetails,
+} from "@/game/content/locations";
+import { CITY_EVENTS, reconcileCityState } from "@/game/content/world-events";
+import {
+  type ClockAnchor,
+  createClockAnchor,
+  getElapsedSeconds,
+} from "@/game/engine/clock";
 import { advanceCoreLoop, createSaveSnapshot } from "@/game/engine/core-loop";
 import { navigateToNode } from "@/game/engine/navigation";
 import { resetGameLoop } from "@/game/engine/reset";
+import { getCharactersAtLocation } from "@/game/engine/routines";
 import { localSave } from "@/game/persistence/local-save";
 import type { GameState } from "@/game/state/types";
 
@@ -19,13 +29,6 @@ type SessionPhase = "loading" | "missing" | "playing" | "resetting" | "error";
 const UI_REFRESH_MS = 500;
 const PERIODIC_SNAPSHOT_SECONDS = 5;
 const RESET_OVERLAY_MS = 1200;
-
-function getLocationLabel(locationId: string) {
-  return (
-    CORE_LOCATION_FIXTURE.find((location) => location.id === locationId)
-      ?.label ?? locationId
-  );
-}
 
 export function GameplaySession() {
   const [game, setGame] = useState<GameState | null>(null);
@@ -100,7 +103,7 @@ export function GameplaySession() {
         current,
         anchor,
         Date.now(),
-        CORE_TECHNICAL_EVENTS,
+        CITY_EVENTS,
         consumedSeconds,
       );
       anchorRef.current = step.anchor;
@@ -110,7 +113,7 @@ export function GameplaySession() {
       if (actionNotice) {
         setNotice(actionNotice);
       } else if (step.executedEventIds.length > 0) {
-        setNotice("Scheduler sincronizzato con il tempo attraversato.");
+        setNotice("Qualcosa è cambiato in città.");
       }
 
       if (step.ended) {
@@ -121,6 +124,7 @@ export function GameplaySession() {
       const lastSaved = lastSavedRemainingRef.current;
       const shouldSave =
         consumedSeconds > 0 ||
+        step.executedEventIds.length > 0 ||
         lastSaved === null ||
         lastSaved - step.state.run.remainingSeconds >=
           PERIODIC_SNAPSHOT_SECONDS;
@@ -145,12 +149,7 @@ export function GameplaySession() {
       return;
     }
 
-    const step = advanceCoreLoop(
-      current,
-      anchor,
-      Date.now(),
-      CORE_TECHNICAL_EVENTS,
-    );
+    const step = advanceCoreLoop(current, anchor, Date.now(), CITY_EVENTS);
     stateRef.current = step.state;
     void localSave.save(createSaveSnapshot(step.state));
   }, []);
@@ -170,17 +169,22 @@ export function GameplaySession() {
           return;
         }
 
-        stateRef.current = savedGame;
-        lastSavedRemainingRef.current = savedGame.run.remainingSeconds;
+        const reconciledGame = reconcileCityState(savedGame);
+        stateRef.current = reconciledGame;
+        lastSavedRemainingRef.current = reconciledGame.run.remainingSeconds;
         anchorRef.current = createClockAnchor(
-          savedGame.run.remainingSeconds,
+          reconciledGame.run.remainingSeconds,
           Date.now(),
         );
-        setGame(savedGame);
+        setGame(reconciledGame);
         updatePhase("playing");
 
-        if (savedGame.run.remainingSeconds === 0) {
-          void beginReset(savedGame);
+        if (reconciledGame !== savedGame) {
+          void localSave.save(reconciledGame);
+        }
+
+        if (reconciledGame.run.remainingSeconds === 0) {
+          void beginReset(reconciledGame);
         }
       })
       .catch(() => {
@@ -229,11 +233,7 @@ export function GameplaySession() {
       return;
     }
 
-    const navigation = navigateToNode(
-      current,
-      CORE_LOCATION_FIXTURE,
-      destinationId,
-    );
+    const navigation = navigateToNode(current, CITY_LOCATIONS, destinationId);
 
     if (!navigation.ok) {
       setNotice("Destinazione non collegata.");
@@ -279,10 +279,18 @@ export function GameplaySession() {
     );
   }
 
-  const currentNode = CORE_LOCATION_FIXTURE.find(
-    (node) => node.id === game.run.currentLocationId,
+  const currentNode = getLocation(game.run.currentLocationId);
+  const elapsedSecond = getElapsedSeconds(
+    createClockAnchor(game.run.remainingSeconds, 0),
+    0,
   );
-  const travelOptions = currentNode?.connections ?? [];
+  const presentCharacters = currentNode
+    ? getCharactersAtLocation(game, currentNode.id, elapsedSecond)
+    : [];
+  const observableDetails = currentNode
+    ? getObservableDetails(game, currentNode)
+    : [];
+  const isBlackout = game.world.flags.blackout === true;
 
   return (
     <main className="gameplay" id="main-content">
@@ -305,49 +313,73 @@ export function GameplaySession() {
         </div>
       </header>
 
-      <div className="gameplay__grid">
-        <section className="gameplay__scene" aria-labelledby="scene-title">
+      <div
+        className={`gameplay__grid ${isBlackout ? "gameplay__grid--blackout" : ""}`}
+      >
+        <section
+          className={`gameplay__scene gameplay__scene--${currentNode?.scene ?? "square"}`}
+          aria-labelledby="scene-title"
+        >
           <div className="gameplay__scene-image" aria-hidden="true" />
           <div className="gameplay__scene-copy">
             <p className="font-mono text-[0.6rem] uppercase tracking-[0.2em] text-accent-red-strong">
-              Infrastruttura M3 · scena provvisoria
+              {isBlackout ? "Corrente interrotta" : currentNode?.atmosphere}
             </p>
             <h1
               className="mt-2 font-display text-3xl uppercase tracking-[0.08em] text-text-main sm:text-4xl"
               id="scene-title"
             >
-              {getLocationLabel(game.run.currentLocationId)}
+              {currentNode?.label ?? game.run.currentLocationId}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-text-muted">
-              Il mondo temporale è attivo. Luoghi, eventi narrativi e routine
-              arriveranno nella milestone dedicata alla città.
+              {currentNode?.description}
             </p>
+            {observableDetails.map((detail) => (
+              <p className="gameplay__observation" key={detail}>
+                {detail}
+              </p>
+            ))}
+
+            <section
+              className="character-presence"
+              aria-labelledby="presence-title"
+            >
+              <h2 id="presence-title">Presenti ora</h2>
+              {presentCharacters.length > 0 ? (
+                <ul>
+                  {presentCharacters.map((character) => (
+                    <li key={character.id}>
+                      <strong>{character.name}</strong>
+                      <span>{character.activity}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>Nessuno in vista.</p>
+              )}
+            </section>
           </div>
         </section>
 
         <aside className="gameplay__controls">
           <CountdownTimer remainingSeconds={game.run.remainingSeconds} />
 
-          <Panel eyebrow="Azioni temporali" title="Verifica motore">
+          <Panel eyebrow="Percorsi" title="Mappa della città">
             <div className="space-y-3 p-4 sm:p-5">
+              <CityMap
+                currentLocationId={game.run.currentLocationId}
+                disabled={phase !== "playing"}
+                locations={CITY_LOCATIONS}
+                onTravel={(destinationId) => void travel(destinationId)}
+              />
+
               <GameButton
+                className="mt-4"
                 disabled={phase !== "playing"}
                 onClick={() => void consumeTime(15)}
               >
-                Attendi 15 secondi
+                Aspetta 15 secondi
               </GameButton>
-
-              {travelOptions.map((connection) => (
-                <GameButton
-                  disabled={phase !== "playing"}
-                  key={connection.destinationId}
-                  onClick={() => void travel(connection.destinationId)}
-                  variant="quiet"
-                >
-                  Vai a {getLocationLabel(connection.destinationId)} ·{" "}
-                  {connection.travelSeconds}s
-                </GameButton>
-              ))}
             </div>
           </Panel>
 
