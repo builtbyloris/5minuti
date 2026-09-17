@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { AudioProvider } from "@/audio/audio-provider";
 import { AccountProvider } from "@/auth/auth-context";
 import "./globals.css";
 
@@ -13,7 +14,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="it">
       <body>
-        <AccountProvider>{children}</AccountProvider>
+        <AudioProvider>
+          <AccountProvider>{children}</AccountProvider>
+        </AudioProvider>
       </body>
     </html>
   );

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { GameButton } from "@/components/ui/game-button";
+import { useDialogFocus } from "@/components/ui/use-dialog-focus";
 import type { ConflictResolution, SyncConflict } from "@/game/sync/types";
 
 function summary(state: SyncConflict["local"]) {
@@ -25,20 +26,23 @@ export function SyncConflictDialog({
   const [confirmation, setConfirmation] = useState<"cloud" | "local" | null>(
     null,
   );
+  const dialogRef = useDialogFocus(undefined, confirmation ?? "choices");
   const local = summary(conflict.local);
   const cloud = summary(conflict.remote.gameState);
 
   return (
     <div
+      aria-describedby="sync-conflict-description"
       aria-labelledby="sync-conflict-title"
       aria-modal="true"
       className="sync-conflict"
+      ref={dialogRef as React.RefObject<HTMLDivElement>}
       role="dialog"
     >
       <div className="sync-conflict__panel">
         <p className="sync-conflict__eyebrow">Conflitto di sincronizzazione</p>
         <h2 id="sync-conflict-title">Scegli quali progressi conservare</h2>
-        <p>
+        <p id="sync-conflict-description">
           L’unione combina le scoperte. Stato del loop e persistenze provengono
           invece da una sola sessione coerente.
         </p>

@@ -20,7 +20,7 @@ export function AppShell({ children, mode = "page" }: AppShellProps) {
       {mode === "page" ? (
         <header className="relative z-10 flex min-h-16 items-center border-b border-border-subtle px-5 sm:px-8">
           <Link
-            className="font-display text-sm uppercase tracking-[0.24em] text-text-main transition-colors hover:text-accent-red-strong focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-red-strong"
+            className="inline-flex min-h-11 items-center font-display text-sm uppercase tracking-[0.24em] text-text-main transition-colors hover:text-accent-red-strong focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-red-strong"
             href="/"
           >
             5 Minuti

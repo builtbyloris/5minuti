@@ -164,6 +164,27 @@ const migrations: Partial<Record<number, Migration>> = {
       schemaVersion: 4,
     };
   },
+  4: (value) => {
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      !("settings" in value) ||
+      typeof value.settings !== "object" ||
+      value.settings === null
+    ) {
+      return value;
+    }
+
+    return {
+      ...value,
+      settings: {
+        ...value.settings,
+        ambienceVolume: 55,
+        effectsVolume: 70,
+      },
+      schemaVersion: 5,
+    };
+  },
 };
 
 export function getSaveSchemaVersion(value: unknown) {
@@ -189,6 +210,7 @@ export function migrateSave(value: unknown): GameState | null {
   }
 
   while (version < GAME_STATE_SCHEMA_VERSION) {
+    const previousVersion = version;
     const migrate = migrations[version];
 
     if (!migrate) {
@@ -198,7 +220,7 @@ export function migrateSave(value: unknown): GameState | null {
     candidate = migrate(candidate);
     version = getSaveSchemaVersion(candidate);
 
-    if (version === null) {
+    if (version === null || version <= previousVersion) {
       return null;
     }
   }

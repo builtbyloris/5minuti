@@ -231,7 +231,7 @@ describe("reset deterministico", () => {
       now: "2026-09-16T08:00:00.000Z",
     });
 
-    expect(milestoneTwoSave.schemaVersion).toBe(4);
+    expect(milestoneTwoSave.schemaVersion).toBe(5);
     expect(
       validateGameState(JSON.parse(JSON.stringify(milestoneTwoSave))),
     ).toEqual(milestoneTwoSave);

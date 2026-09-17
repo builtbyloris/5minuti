@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAudio } from "@/audio/audio-provider";
 import { GameButton } from "@/components/ui/game-button";
 import { INTRO_SCENES } from "@/game/content/intro";
 import { localSave } from "@/game/persistence/local-save";
@@ -13,6 +14,7 @@ type IntroSequenceProps = {
 
 export function IntroSequence({ mode }: IntroSequenceProps) {
   const router = useRouter();
+  const { settings } = useAudio();
   const [sceneIndex, setSceneIndex] = useState(0);
   const [isLeaving, setIsLeaving] = useState(false);
   const [error, setError] = useState("");
@@ -111,6 +113,9 @@ export function IntroSequence({ mode }: IntroSequenceProps) {
               <p key={paragraph}>{paragraph}</p>
             ))}
           </div>
+          {settings.subtitles && scene.caption ? (
+            <p className="intro__caption">{scene.caption}</p>
+          ) : null}
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <GameButton

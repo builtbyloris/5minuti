@@ -4,6 +4,12 @@ import { GameplaySession } from "@/components/game/gameplay-session";
 import { localSave } from "@/game/persistence/local-save";
 import { createInitialGameState } from "@/game/state/initial-state";
 
+const { playEffect } = vi.hoisted(() => ({ playEffect: vi.fn() }));
+
+vi.mock("@/audio/audio-provider", () => ({
+  useAudio: () => ({ playEffect }),
+}));
+
 async function flushPromises() {
   await act(async () => {
     await Promise.resolve();
@@ -15,6 +21,7 @@ describe("GameplaySession", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-16T10:00:00.000Z"));
+    playEffect.mockClear();
     await localSave.clear();
   });
 
@@ -62,6 +69,7 @@ describe("GameplaySession", () => {
       await Promise.resolve();
     });
     expect(screen.getByText("Reset in corso")).toBeDefined();
+    expect(playEffect).toHaveBeenCalledWith("reset");
 
     await act(async () => {
       vi.advanceTimersByTime(1_200);
@@ -131,6 +139,8 @@ describe("GameplaySession", () => {
     await flushPromises();
 
     expect(screen.getByText("Nuova conoscenza")).toBeDefined();
+    expect(playEffect).toHaveBeenCalledTimes(1);
+    expect(playEffect).toHaveBeenCalledWith("discovery");
     expect((await localSave.load())?.progression.knowledge).toEqual([
       "elena_enters_pharmacy_2357",
     ]);
@@ -147,6 +157,25 @@ describe("GameplaySession", () => {
     await flushPromises();
 
     expect(screen.queryByText("Nuova conoscenza")).toBeNull();
+    expect(playEffect).toHaveBeenCalledTimes(1);
+  });
+
+  it("riproduce una sola volta il cue attraversando la soglia timer", async () => {
+    const state = createInitialGameState({ id: "guest-timer-audio" });
+    await localSave.save({
+      ...state,
+      run: { ...state.run, remainingSeconds: 31 },
+    });
+    render(<GameplaySession />);
+    await flushPromises();
+
+    await act(async () => {
+      vi.advanceTimersByTime(3_000);
+      await Promise.resolve();
+    });
+
+    expect(playEffect).toHaveBeenCalledTimes(1);
+    expect(playEffect).toHaveBeenCalledWith("timerWarning");
   });
 
   it("mostra il dialogo cross-loop e ne applica il costo senza completare l'Atto", async () => {
@@ -208,7 +237,9 @@ describe("GameplaySession", () => {
 
     expect(screen.getByText("Usa il campanello")).toBeDefined();
     fireEvent.click(screen.getByText("Diario"));
-    expect(screen.getByText("Impronte nella farmacia")).toBeDefined();
+    expect(
+      screen.getAllByText("Impronte nella farmacia").length,
+    ).toBeGreaterThan(0);
     expect((await localSave.load())?.progression.discoveredClues).toEqual([
       "pharmacy_wet_footprints",
     ]);

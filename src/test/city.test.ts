@@ -261,7 +261,7 @@ describe("eventi globali M4", () => {
     };
     const reconciled = reconcileCityState(oldSave);
 
-    expect(reconciled.schemaVersion).toBe(4);
+    expect(reconciled.schemaVersion).toBe(5);
     expect(reconciled.run.currentLocationId).toBe("piazza");
     expect(reconciled.world.flags.blackout).toBe(true);
   });

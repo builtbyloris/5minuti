@@ -4,7 +4,11 @@ type ResetOverlayProps = {
 
 export function ResetOverlay({ loopNumber }: ResetOverlayProps) {
   return (
-    <output aria-live="assertive" className="reset-overlay">
+    <output
+      aria-label={`Reset del loop ${loopNumber}. Preparazione loop ${loopNumber + 1}.`}
+      aria-live="assertive"
+      className="reset-overlay"
+    >
       <div aria-hidden="true" className="reset-overlay__line" />
       <p className="font-mono text-sm uppercase tracking-[0.28em] text-text-muted">
         Fine finestra

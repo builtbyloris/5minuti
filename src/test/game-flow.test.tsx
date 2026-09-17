@@ -69,24 +69,54 @@ describe("introduzione", () => {
     expect(push).toHaveBeenCalledWith("/");
     expect(JSON.stringify(await localSave.load())).toBe(serializedBefore);
   });
+
+  it("mostra caption accessibili senza dipendere dall'audio", () => {
+    render(<IntroSequence mode="replay" />);
+
+    expect(screen.getByText("[Pioggia sulla città.]")).toBeDefined();
+  });
 });
 
 describe("reset save", () => {
+  it("espone controlli audio e reduced motion accessibili", () => {
+    render(<SaveResetPanel />);
+
+    expect(screen.getByRole("slider", { name: /Atmosfera/ })).toBeDefined();
+    expect(screen.getByRole("slider", { name: /Effetti/ })).toBeDefined();
+    expect(
+      screen.getByRole("checkbox", {
+        name: /Riduci movimento ed effetti/,
+      }),
+    ).toBeDefined();
+  });
+
   it("richiede due conferme prima di cancellare il progresso", async () => {
     await localSave.save(createInitialGameState({ id: "guest-test" }));
     render(<SaveResetPanel />);
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Resetta salvataggio" }),
-    );
+    let resetButton = await screen.findByRole("button", {
+      name: "Resetta salvataggio",
+    });
+    fireEvent.click(resetButton);
     expect(await localSave.load()).not.toBeNull();
 
+    const firstConfirmation = screen.getByRole("button", {
+      name: "Prima conferma",
+    });
+    expect(document.activeElement).toBe(firstConfirmation);
+    fireEvent.keyDown(firstConfirmation, { key: "Escape" });
+    resetButton = screen.getByRole("button", { name: "Resetta salvataggio" });
+    expect(document.activeElement).toBe(resetButton);
+
+    fireEvent.click(resetButton);
     fireEvent.click(screen.getByRole("button", { name: "Prima conferma" }));
     expect(await localSave.load()).not.toBeNull();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Cancella definitivamente" }),
-    );
+    const finalConfirmation = screen.getByRole("button", {
+      name: "Cancella definitivamente",
+    });
+    expect(document.activeElement).toBe(finalConfirmation);
+    fireEvent.click(finalConfirmation);
 
     await waitFor(async () => expect(await localSave.load()).toBeNull());
     expect(screen.getByText(/La home mostrerà Nuova partita/)).toBeDefined();

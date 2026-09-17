@@ -1,3 +1,4 @@
+import { DiscoveryToast } from "@/components/game/discovery-toast";
 import type { SecretDefinition } from "@/game/content/secrets";
 
 type SecretToastProps = {
@@ -7,18 +8,13 @@ type SecretToastProps = {
 
 export function SecretToast({ onClose, secret }: SecretToastProps) {
   return (
-    <output aria-live="polite" className="secret-toast">
-      <div>
-        <p>Segreto scoperto</p>
-        <strong>{secret.title}</strong>
-      </div>
-      <button
-        aria-label="Chiudi notifica segreto"
-        onClick={onClose}
-        type="button"
-      >
-        ×
-      </button>
-    </output>
+    <DiscoveryToast
+      closeLabel="Chiudi notifica segreto"
+      label="Segreto scoperto"
+      onClose={onClose}
+      tone="secret"
+    >
+      {secret.title}
+    </DiscoveryToast>
   );
 }

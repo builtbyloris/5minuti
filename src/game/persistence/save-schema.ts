@@ -41,6 +41,15 @@ function isRelationshipRecord(
   );
 }
 
+function isVolume(value: unknown) {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= 100
+  );
+}
+
 function isPersistence(value: unknown): value is PersistenceState {
   if (!isRecord(value)) {
     return false;
@@ -121,6 +130,8 @@ export function validateGameState(value: unknown): GameState | null {
 
   if (
     !isRecord(settings) ||
+    !isVolume(settings.ambienceVolume) ||
+    !isVolume(settings.effectsVolume) ||
     !["system", "reduce", "full"].includes(String(settings.reducedMotion)) ||
     typeof settings.subtitles !== "boolean"
   ) {

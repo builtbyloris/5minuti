@@ -76,7 +76,12 @@ describe("mergeGameStates", () => {
         remainingSeconds: 111,
         runFlags: { local: true },
       },
-      settings: { reducedMotion: "reduce" as const, subtitles: false },
+      settings: {
+        ambienceVolume: 25,
+        effectsVolume: 40,
+        reducedMotion: "reduce" as const,
+        subtitles: false,
+      },
       world: { flags: { local: true } },
     };
     const remote = {

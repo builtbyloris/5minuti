@@ -1,3 +1,4 @@
+import { DiscoveryToast } from "@/components/game/discovery-toast";
 import type { KnowledgeDefinition } from "@/game/content/knowledge";
 
 type KnowledgeToastProps = {
@@ -7,14 +8,13 @@ type KnowledgeToastProps = {
 
 export function KnowledgeToast({ knowledge, onClose }: KnowledgeToastProps) {
   return (
-    <output aria-live="polite" className="knowledge-toast">
-      <div>
-        <p>Nuova conoscenza</p>
-        <strong>{knowledge.title}</strong>
-      </div>
-      <button aria-label="Chiudi notifica" onClick={onClose} type="button">
-        ×
-      </button>
-    </output>
+    <DiscoveryToast
+      closeLabel="Chiudi notifica"
+      label="Nuova conoscenza"
+      onClose={onClose}
+      tone="knowledge"
+    >
+      {knowledge.title}
+    </DiscoveryToast>
   );
 }

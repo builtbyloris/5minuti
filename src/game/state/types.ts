@@ -1,4 +1,4 @@
-export const GAME_STATE_SCHEMA_VERSION = 4 as const;
+export const GAME_STATE_SCHEMA_VERSION = 5 as const;
 
 export type ActId = number;
 
@@ -52,6 +52,8 @@ export type WorldState = {
 };
 
 export type SettingsState = {
+  ambienceVolume: number;
+  effectsVolume: number;
   reducedMotion: "system" | "reduce" | "full";
   subtitles: boolean;
 };

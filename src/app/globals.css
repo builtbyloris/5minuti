@@ -77,6 +77,11 @@ button {
   pointer-events: none;
 }
 
+.app-shell > header {
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+}
+
 .intro {
   display: flex;
   min-height: 0;
@@ -91,7 +96,9 @@ button {
   justify-content: space-between;
   gap: 1rem;
   border-bottom: 1px solid var(--border-subtle);
-  padding: 0.5rem 1.25rem;
+  padding: max(0.5rem, env(safe-area-inset-top))
+    max(1.25rem, env(safe-area-inset-right)) 0.5rem
+    max(1.25rem, env(safe-area-inset-left));
 }
 
 .intro__scene {
@@ -168,6 +175,18 @@ button {
   padding: 1.75rem 1.25rem 2rem;
 }
 
+.intro__caption {
+  width: fit-content;
+  margin-top: 1.25rem;
+  border-left: 2px solid var(--accent-warm);
+  padding: 0.45rem 0.75rem;
+  background: rgba(7, 11, 18, 0.52);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-style: italic;
+  line-height: 1.5;
+}
+
 .intro__scene--pharmacy .intro__image {
   box-shadow: inset 0 0 8rem rgba(61, 220, 151, 0.08);
 }
@@ -199,7 +218,9 @@ button {
   gap: 1rem;
   border-bottom: 1px solid var(--border-subtle);
   background: rgba(7, 11, 18, 0.72);
-  padding: 0.75rem 1.25rem;
+  padding: max(0.75rem, env(safe-area-inset-top))
+    max(1.25rem, env(safe-area-inset-right)) 0.75rem
+    max(1.25rem, env(safe-area-inset-left));
   backdrop-filter: blur(12px);
 }
 
@@ -454,7 +475,7 @@ button {
 
 .action-grid__header p,
 .dialogue-box__header p,
-.knowledge-toast p {
+.discovery-toast p {
   color: var(--accent-red-strong);
   font-family: var(--font-mono);
   font-size: 0.58rem;
@@ -503,9 +524,7 @@ button {
 }
 
 .dialogue-box__close,
-.knowledge-toast button,
-.persistence-toast button,
-.secret-toast button {
+.discovery-toast button {
   display: grid;
   width: 2.75rem;
   height: 2.75rem;
@@ -518,17 +537,13 @@ button {
 }
 
 .dialogue-box__close:hover,
-.knowledge-toast button:hover,
-.persistence-toast button:hover,
-.secret-toast button:hover {
+.discovery-toast button:hover {
   border-color: var(--accent-red-strong);
   color: var(--text-main);
 }
 
 .dialogue-box__close:focus-visible,
-.knowledge-toast button:focus-visible,
-.persistence-toast button:focus-visible,
-.secret-toast button:focus-visible,
+.discovery-toast button:focus-visible,
 .journal summary:focus-visible {
   outline: 2px solid var(--accent-red-strong);
   outline-offset: 3px;
@@ -1214,9 +1229,78 @@ button {
   }
 }
 
-.knowledge-toast {
+.settings-controls {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.settings-range,
+.settings-toggle {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  background: rgba(7, 11, 18, 0.5);
+  padding: 1rem;
+}
+
+.settings-range > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.settings-range strong,
+.settings-toggle strong {
+  color: var(--text-main);
+  font-size: 0.82rem;
+}
+
+.settings-range output {
+  color: var(--accent-warm);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.settings-range small,
+.settings-toggle small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.settings-range input[type="range"] {
+  width: 100%;
+  min-height: 2.75rem;
+  accent-color: var(--accent-red-strong);
+  cursor: pointer;
+}
+
+.settings-range input[type="range"]:focus-visible,
+.settings-toggle input:focus-visible {
+  outline: 2px solid var(--accent-red-strong);
+  outline-offset: 4px;
+}
+
+.settings-toggle {
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-items: start;
+  cursor: pointer;
+}
+
+.settings-toggle input {
+  width: 1.35rem;
+  height: 1.35rem;
+  margin: 0.1rem auto 0;
+  accent-color: var(--accent-red-strong);
+}
+
+.discovery-toast {
   position: fixed;
-  top: 5rem;
+  top: max(5rem, calc(env(safe-area-inset-top) + 1rem));
   right: 1rem;
   z-index: 70;
   display: flex;
@@ -1231,67 +1315,32 @@ button {
   animation: knowledge-toast-in 180ms ease-out;
 }
 
-.persistence-toast {
-  position: fixed;
-  top: 5rem;
-  right: 1rem;
-  z-index: 71;
-  display: flex;
-  width: min(24rem, calc(100vw - 2rem));
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+.discovery-toast[data-tone="persistence"] {
   border: 1px solid rgba(215, 168, 91, 0.68);
-  background: var(--bg-panel-strong);
-  padding: 0.8rem;
-  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.5);
-  animation: knowledge-toast-in 180ms ease-out;
 }
 
-.persistence-toast p {
+.discovery-toast[data-tone="persistence"] p,
+.discovery-toast[data-tone="secret"] p {
   color: var(--accent-warm);
-  font-family: var(--font-mono);
-  font-size: 0.58rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
 }
 
-.persistence-toast strong {
+.discovery-toast[data-tone="clue"] {
+  border-color: rgba(88, 166, 255, 0.68);
+}
+
+.discovery-toast[data-tone="clue"] p {
+  color: var(--accent-blue);
+}
+
+.discovery-toast[data-tone="secret"] {
+  border: 1px solid rgba(215, 168, 91, 0.72);
+}
+
+.discovery-toast strong {
   display: block;
   margin-top: 0.2rem;
   font-size: 0.75rem;
   line-height: 1.4;
-}
-
-.secret-toast {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 72;
-  display: flex;
-  width: min(24rem, calc(100vw - 2rem));
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  border: 1px solid rgba(215, 168, 91, 0.72);
-  background: var(--bg-panel-strong);
-  padding: 0.8rem;
-  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.5);
-  animation: knowledge-toast-in 180ms ease-out;
-}
-
-.secret-toast p {
-  color: var(--accent-warm);
-  font-family: var(--font-mono);
-  font-size: 0.58rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.secret-toast strong {
-  display: block;
-  margin-top: 0.2rem;
-  font-size: 0.75rem;
 }
 
 .act-complete-overlay {
@@ -1358,13 +1407,6 @@ button {
   margin-top: 2rem;
 }
 
-.knowledge-toast strong {
-  display: block;
-  margin-top: 0.2rem;
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
 @keyframes knowledge-toast-in {
   from {
     opacity: 0;
@@ -1382,6 +1424,22 @@ button {
   padding-left: 1.25rem;
 }
 
+.gameplay-timer__urgency {
+  width: fit-content;
+  margin-top: 0.75rem;
+  border: 1px solid rgba(255, 77, 77, 0.45);
+  padding: 0.35rem 0.55rem;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.gameplay-timer[data-urgency="critical"] {
+  border-left-width: 3px;
+}
+
 .reset-overlay {
   position: fixed;
   inset: 0;
@@ -1391,12 +1449,33 @@ button {
   justify-content: center;
   flex-direction: column;
   overflow: hidden;
-  padding: 2rem;
+  padding: max(2rem, env(safe-area-inset-top))
+    max(2rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom))
+    max(2rem, env(safe-area-inset-left));
   background:
     radial-gradient(circle, rgba(88, 166, 255, 0.1), transparent 42%),
     rgba(7, 11, 18, 0.97);
   text-align: center;
   animation: reset-overlay-in 240ms ease-out;
+}
+
+.reset-overlay::before {
+  position: absolute;
+  inset: 0;
+  background: rgba(232, 230, 227, 0.12);
+  content: "";
+  animation: reset-flash 480ms ease-out both;
+  pointer-events: none;
+}
+
+@keyframes reset-flash {
+  from {
+    opacity: 0.9;
+  }
+
+  to {
+    opacity: 0;
+  }
 }
 
 .reset-overlay__line {
@@ -1513,12 +1592,33 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-shell *,
-  .app-shell *::before,
-  .app-shell *::after {
+  *,
+  *::before,
+  *::after {
     scroll-behavior: auto;
     transition-duration: 0.01ms;
     animation-duration: 0.01ms;
     animation-iteration-count: 1;
   }
+
+  .reset-overlay::before {
+    opacity: 1;
+    background: rgba(7, 11, 18, 0.45);
+    animation: none;
+  }
+}
+
+html[data-motion="reduce"] *,
+html[data-motion="reduce"] *::before,
+html[data-motion="reduce"] *::after {
+  scroll-behavior: auto;
+  transition-duration: 0.01ms;
+  animation-duration: 0.01ms;
+  animation-iteration-count: 1;
+}
+
+html[data-motion="reduce"] .reset-overlay::before {
+  opacity: 1;
+  background: rgba(7, 11, 18, 0.45);
+  animation: none;
 }

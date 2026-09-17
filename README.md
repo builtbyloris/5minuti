@@ -10,9 +10,9 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 9 — Account e sincronizzazione.**
+**Milestone 10 — Audio, polish e accessibilità.**
 
-Il vertical slice narrativo V1 è giocabile dall'Atto 1 all'Atto 3. La modalità guest resta interamente locale e offline; un account Google opzionale può sincronizzare la stessa copia locale tramite Supabase. Il cloud opera in modalità best-effort e non è mai una dipendenza del gameplay.
+Il vertical slice narrativo V1 è giocabile dall'Atto 1 all'Atto 3. Audio e motion sono presentazione opzionale: il gioco resta completo con entrambi i volumi a zero, autoplay bloccato o movimento ridotto. La modalità guest resta interamente locale e offline; un account Google opzionale può sincronizzare la stessa copia locale tramite Supabase. Il cloud opera in modalità best-effort e non è mai una dipendenza del gameplay.
 
 ## Stack
 
@@ -56,7 +56,7 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Knowledge e indizi sono progressioni distinte e persistenti. Lo schema save v2 aggiunge `discoveredClues`; i salvataggi v1 vengono migrati automaticamente.
 - Le persistenze sono distinte dalla knowledge: descrivono alterazioni residue del mondo o delle relazioni, non ciò che il protagonista sa. Sono definite come contenuti data-driven e applicate al nuovo baseline dopo il reset.
 - `remainingLoops` include il loop corrente. Una persistenza con valore `2` vive nel loop di creazione e nel successivo, poi viene rimossa al reset seguente. L'assenza del campo indica una persistenza senza scadenza.
-- I save usano lo schema v4. La migrazione conserva la catena v1 → v2 → v3 → v4 e aggiunge persone e luoghi scoperti. Per i save precedenti la ricostruzione è conservativa: vengono inferiti soltanto incontri e visite dimostrati da dati persistenti, quindi alcuni elementi osservati in passato possono comparire soltanto dopo una nuova visita.
+- I save usano lo schema v5. La migrazione conserva la catena v1 → v2 → v3 → v4 → v5: v4 aggiunge persone e luoghi scoperti, mentre v5 introduce i volumi Atmosfera/Effetti con default moderati. Per i save precedenti la ricostruzione è conservativa: vengono inferiti soltanto incontri e visite dimostrati da dati persistenti, quindi alcuni elementi osservati in passato possono comparire soltanto dopo una nuova visita.
 
 ## Policy degli Atti V1
 
@@ -88,7 +88,20 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Gli Atti vengono normalizzati nell’intervallo 1–3 e riconciliati con il gate giornaliero. Non può essere creato un Atto 4.
 - Ogni update cloud usa optimistic concurrency sulla `revision`. Un conflitto ricarica la versione corrente, esegue un solo merge/retry e, in caso di ulteriore errore, lascia intatto il save locale.
 - Logout e scadenza sessione non cancellano il salvataggio locale. Un reset autenticato crea uno stato iniziale locale e tenta di sostituire anche il cloud; se il cloud fallisce, un login successivo genera un conflitto invece di ripristinare silenziosamente i vecchi progressi.
-- Sessione, identità, revision cloud e stato sync restano fuori dal `GameState`, che rimane allo schema v4. Token OAuth e provider token non vengono salvati dal gioco.
+- Sessione, identità, revision cloud e stato sync restano fuori dal `GameState`, ora allo schema v5 per le sole preferenze audio. Token OAuth e provider token non vengono salvati dal gioco.
+
+## Audio e accessibilità
+
+- Il layer `src/audio` centralizza due loop ambientali e gli effetti one-shot. Il clock non importa né conosce l’audio.
+- Il browser sblocca l’audio soltanto dopo la prima interazione valida. Un rifiuto di `play()`, un asset non disponibile o il volume zero non generano errori applicativi e non fermano il gioco.
+- Pioggia e città sono attive soltanto in `/gioca` e vengono sospese quando la pagina è nascosta o quando si lascia la route.
+- I cue del timer derivano dal clock autorevole: uno attraversando i 30 secondi e uno, più evidente, attraversando i 10. Un recupero dalla background tab produce al massimo il cue della soglia più urgente.
+- Knowledge, indizi, persistenze e segreti condividono un feedback sonoro discreto, attivato soltanto dall’evento di nuova scoperta. Il reset usa un cue separato e non aspetta che termini.
+- `/impostazioni` salva Atmosfera, Effetti, sottotitoli e riduzione del movimento nel LocalSave. Durante il merge cloud le impostazioni restano quelle del dispositivo corrente.
+- Il movimento effettivamente ridotto è l’OR tra `prefers-reduced-motion` e la preferenza interna. Flash, transizioni e feedback usano una variante minima; il contenuto non cambia.
+- Le scene dell’intro includono caption testuali essenziali, indipendenti dai volumi. Il timer non usa `aria-live` ogni secondo e comunica l’urgenza anche con testo.
+
+I cinque WAV in `public/audio` sono asset V1 originali e procedurali, senza materiale o licenze di terzi. Sono riproducibili con `node scripts/generate-audio-assets.mjs`; vengono generati a 22.05 kHz, mono, PCM 16-bit per mantenere dimensioni contenute e compatibilità browser.
 
 ## Supabase / Google Auth setup
 
@@ -125,6 +138,7 @@ npm run test:watch    # test in modalità watch
 
 ```text
 src/
+  audio/               controller, cue e provider audio centralizzato
   app/                 routing e pagine Next.js
   components/
     archive/           UI dell'Archivio
@@ -146,6 +160,9 @@ src/
 public/
   images/
   audio/
+
+scripts/
+  generate-audio-assets.mjs
 ```
 
 La migration SQL versionata si trova in `supabase/migrations/`. Il callback OAuth è `src/app/auth/callback/route.ts`; `proxy.ts` aggiorna i cookie di sessione secondo il pattern SSR corrente.

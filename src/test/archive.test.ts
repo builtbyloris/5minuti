@@ -265,7 +265,7 @@ describe("migrazione Archivio v4", () => {
     };
     const migrated = migrateSave(legacy);
 
-    expect(migrated?.schemaVersion).toBe(4);
+    expect(migrated?.schemaVersion).toBe(5);
     expect(migrated?.progression.discoveredLocations).toEqual([
       "piazza",
       "farmacia",

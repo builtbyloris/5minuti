@@ -53,6 +53,12 @@ describe("GameState iniziale", () => {
       relationships: {},
     });
     expect(state.metadata.introduction.status).toBe("pending");
+    expect(state.settings).toEqual({
+      ambienceVolume: 55,
+      effectsVolume: 70,
+      reducedMotion: "system",
+      subtitles: true,
+    });
     expect(validateGameState(state)).toEqual(state);
   });
 
@@ -154,7 +160,7 @@ describe("LocalSaveAdapter", () => {
 
     const migrated = await adapter.load();
 
-    expect(migrated?.schemaVersion).toBe(4);
+    expect(migrated?.schemaVersion).toBe(5);
     expect(migrated?.progression.knowledge).toEqual([
       "elena_enters_pharmacy_2357",
     ]);
@@ -197,7 +203,7 @@ describe("LocalSaveAdapter", () => {
 
     const migrated = await adapter.load("2026-09-16");
 
-    expect(migrated?.schemaVersion).toBe(4);
+    expect(migrated?.schemaVersion).toBe(5);
     expect(migrated?.progression.actGate.nextActAvailableOn).toBeNull();
     expect(migrated?.progression.completedActs).toEqual([1]);
     expect(migrated?.progression.knowledge).toEqual([
@@ -217,6 +223,51 @@ describe("LocalSaveAdapter", () => {
       "stazione",
     ]);
     expect(migrated?.progression.discoveredPeople).toEqual(["elena"]);
+  });
+
+  it("migra un save v4 ai volumi M10 v5 preservando le preferenze esistenti", async () => {
+    const storage = new MemoryStorage();
+    const adapter = new LocalSaveAdapter(storage);
+    const state = createInitialGameState({ id: "guest-m9" });
+    const legacySave = {
+      ...state,
+      schemaVersion: 4,
+      settings: {
+        reducedMotion: "reduce",
+        subtitles: false,
+      },
+    };
+    storage.setItem(LOCAL_SAVE_KEY, JSON.stringify(legacySave));
+
+    const migrated = await adapter.load();
+
+    expect(migrated?.schemaVersion).toBe(5);
+    expect(migrated?.settings).toEqual({
+      ambienceVolume: 55,
+      effectsVolume: 70,
+      reducedMotion: "reduce",
+      subtitles: false,
+    });
+  });
+
+  it("persiste volumi e reduced motion dopo reload", async () => {
+    const adapter = new LocalSaveAdapter(new MemoryStorage());
+    const state = createInitialGameState({ id: "guest-settings" });
+    await adapter.save({
+      ...state,
+      settings: {
+        ...state.settings,
+        ambienceVolume: 0,
+        effectsVolume: 35,
+        reducedMotion: "reduce",
+      },
+    });
+
+    expect((await adapter.load())?.settings).toMatchObject({
+      ambienceVolume: 0,
+      effectsVolume: 35,
+      reducedMotion: "reduce",
+    });
   });
 
   it("gestisce un save assente", async () => {

@@ -86,6 +86,25 @@ describe("CloudSaveAdapter", () => {
     expect((await adapter.load("user-1"))?.gameState).toEqual(state);
   });
 
+  it("migra un payload cloud v4 alle impostazioni audio v5", async () => {
+    const repository = new FakeRepository();
+    const adapter = new RepositoryCloudSaveAdapter(repository);
+    const state = createInitialGameState({ id: "guest-cloud-v4" });
+    repository.row = rowWith({
+      ...state,
+      schemaVersion: 4,
+      settings: { reducedMotion: "system", subtitles: true },
+    });
+
+    const loaded = await adapter.load("user-1");
+
+    expect(loaded?.schemaVersion).toBe(5);
+    expect(loaded?.gameState.settings).toMatchObject({
+      ambienceVolume: 55,
+      effectsVolume: 70,
+    });
+  });
+
   it("aggiorna soltanto con expected revision e rileva conflitti", async () => {
     const repository = new FakeRepository();
     const adapter = new RepositoryCloudSaveAdapter(repository);

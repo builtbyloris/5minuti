@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getTimerCue } from "@/audio/audio-cues";
+import { useAudio } from "@/audio/audio-provider";
 import { ActCompleteOverlay } from "@/components/game/act-complete-overlay";
 import { ActionGrid } from "@/components/game/action-grid";
 import { CityMap } from "@/components/game/city-map";
+import { ClueToast } from "@/components/game/clue-toast";
 import { CountdownTimer } from "@/components/game/countdown-timer";
 import { DialogueBox } from "@/components/game/dialogue-box";
 import { Journal } from "@/components/game/journal";
@@ -15,6 +18,7 @@ import { GameButton } from "@/components/ui/game-button";
 import { Panel } from "@/components/ui/panel";
 import { discoverPerson, syncVisiblePeople } from "@/game/archive/discoveries";
 import { type ActDefinition, getActDefinition } from "@/game/content/acts";
+import { type ClueDefinition, getClueDefinition } from "@/game/content/clues";
 import {
   type DialogueChoice,
   type DialogueVariant,
@@ -83,6 +87,7 @@ const PERIODIC_SNAPSHOT_SECONDS = 5;
 const RESET_OVERLAY_MS = 1200;
 
 export function GameplaySession() {
+  const { playEffect } = useAudio();
   const [game, setGame] = useState<GameState | null>(null);
   const [phase, setPhase] = useState<SessionPhase>("loading");
   const [notice, setNotice] = useState("");
@@ -94,6 +99,7 @@ export function GameplaySession() {
   const [persistenceToast, setPersistenceToast] =
     useState<PersistenceDefinition | null>(null);
   const [secretToast, setSecretToast] = useState<SecretDefinition | null>(null);
+  const [clueToast, setClueToast] = useState<ClueDefinition | null>(null);
   const [completedAct, setCompletedAct] = useState<ActDefinition | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const anchorRef = useRef<ClockAnchor | null>(null);
@@ -101,6 +107,7 @@ export function GameplaySession() {
   const resetInProgressRef = useRef(false);
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRemainingRef = useRef<number | null>(null);
+  const previousRemainingRef = useRef<number | null>(null);
 
   const updatePhase = useCallback((nextPhase: SessionPhase) => {
     phaseRef.current = nextPhase;
@@ -139,6 +146,7 @@ export function GameplaySession() {
     setKnowledgeToast(null);
     setPersistenceToast(null);
     setSecretToast(null);
+    setClueToast(null);
     setNotice("Nuovo loop avviato alle 23:55.");
     updatePhase("playing");
   }, [persist, updatePhase]);
@@ -150,13 +158,14 @@ export function GameplaySession() {
       }
 
       resetInProgressRef.current = true;
+      playEffect("reset");
       updatePhase("resetting");
       await persist(endedState);
       resetTimeoutRef.current = setTimeout(() => {
         void finishReset();
       }, RESET_OVERLAY_MS);
     },
-    [finishReset, persist, updatePhase],
+    [finishReset, persist, playEffect, updatePhase],
   );
 
   const applyStep = useCallback(
@@ -250,6 +259,7 @@ export function GameplaySession() {
           300 - reconciledGameBase.run.remainingSeconds,
         );
         stateRef.current = reconciledGame;
+        previousRemainingRef.current = reconciledGame.run.remainingSeconds;
         lastSavedRemainingRef.current = reconciledGame.run.remainingSeconds;
         anchorRef.current = createClockAnchor(
           reconciledGame.run.remainingSeconds,
@@ -299,6 +309,21 @@ export function GameplaySession() {
   }, [applyStep, beginReset, saveCurrentSnapshot, updatePhase]);
 
   useEffect(() => {
+    if (!game || phase !== "playing") {
+      return;
+    }
+
+    const previous = previousRemainingRef.current;
+    if (previous !== null) {
+      const cue = getTimerCue(previous, game.run.remainingSeconds);
+      if (cue) {
+        playEffect(cue);
+      }
+    }
+    previousRemainingRef.current = game.run.remainingSeconds;
+  }, [game, phase, playEffect]);
+
+  useEffect(() => {
     if (!knowledgeToast) {
       return;
     }
@@ -327,6 +352,16 @@ export function GameplaySession() {
 
     return () => window.clearTimeout(timeoutId);
   }, [secretToast]);
+
+  useEffect(() => {
+    if (!clueToast) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setClueToast(null), 5_000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [clueToast]);
 
   async function consumeTime(seconds: number) {
     await applyStep(
@@ -412,6 +447,14 @@ export function GameplaySession() {
       setKnowledgeToast(acquired);
     }
 
+    const discoveredClueId = result.discoveredClueIds[0];
+    const discoveredClue = discoveredClueId
+      ? getClueDefinition(discoveredClueId)
+      : null;
+    if (discoveredClue) {
+      setClueToast(discoveredClue);
+    }
+
     const grantedPersistenceId = result.grantedPersistenceIds[0];
     const grantedPersistence = grantedPersistenceId
       ? getPersistenceDefinition(grantedPersistenceId)
@@ -426,6 +469,15 @@ export function GameplaySession() {
       : null;
     if (discoveredSecret) {
       setSecretToast(discoveredSecret);
+    }
+
+    if (
+      result.acquiredKnowledgeIds.length > 0 ||
+      result.discoveredClueIds.length > 0 ||
+      result.grantedPersistenceIds.length > 0 ||
+      result.discoveredSecretIds.length > 0
+    ) {
+      playEffect("discovery");
     }
 
     if (result.completedActId !== null) {
@@ -463,6 +515,18 @@ export function GameplaySession() {
     anchorRef.current = effects.anchor;
     stateRef.current = effects.state;
     setGame(effects.state);
+    const acquiredId = effects.acquiredKnowledgeIds[0];
+    const acquired = acquiredId ? getKnowledgeDefinition(acquiredId) : null;
+    if (acquired) {
+      setKnowledgeToast(acquired);
+    }
+    const discoveredClueId = effects.discoveredClueIds[0];
+    const discoveredClue = discoveredClueId
+      ? getClueDefinition(discoveredClueId)
+      : null;
+    if (discoveredClue) {
+      setClueToast(discoveredClue);
+    }
     const grantedPersistenceId = effects.grantedPersistenceIds[0];
     const grantedPersistence = grantedPersistenceId
       ? getPersistenceDefinition(grantedPersistenceId)
@@ -477,6 +541,14 @@ export function GameplaySession() {
       : null;
     if (discoveredSecret) {
       setSecretToast(discoveredSecret);
+    }
+    if (
+      effects.acquiredKnowledgeIds.length > 0 ||
+      effects.discoveredClueIds.length > 0 ||
+      effects.grantedPersistenceIds.length > 0 ||
+      effects.discoveredSecretIds.length > 0
+    ) {
+      playEffect("discovery");
     }
 
     if (effects.completedActId !== null) {
@@ -727,6 +799,10 @@ export function GameplaySession() {
           onClose={() => setSecretToast(null)}
           secret={secretToast}
         />
+      ) : null}
+
+      {clueToast ? (
+        <ClueToast clue={clueToast} onClose={() => setClueToast(null)} />
       ) : null}
 
       {completedAct ? (

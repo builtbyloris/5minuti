@@ -47,6 +47,8 @@ export function createInitialGameState(
       flags: {},
     },
     settings: {
+      ambienceVolume: 55,
+      effectsVolume: 70,
       reducedMotion: "system",
       subtitles: true,
     },

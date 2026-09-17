@@ -1,4 +1,7 @@
+"use client";
+
 import { GameButton } from "@/components/ui/game-button";
+import { useDialogFocus } from "@/components/ui/use-dialog-focus";
 import type { DialogueChoice, DialogueVariant } from "@/game/content/dialogues";
 
 type DialogueBoxProps = {
@@ -16,10 +19,14 @@ export function DialogueBox({
   response,
   variant,
 }: DialogueBoxProps) {
+  const dialogRef = useDialogFocus(onClose, response ?? variant.id);
+
   return (
     <section
       aria-labelledby="dialogue-title"
+      aria-modal="true"
       className="dialogue-box"
+      ref={dialogRef}
       role="dialog"
     >
       <header className="dialogue-box__header">

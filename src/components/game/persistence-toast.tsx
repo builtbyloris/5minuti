@@ -1,3 +1,4 @@
+import { DiscoveryToast } from "@/components/game/discovery-toast";
 import type { PersistenceDefinition } from "@/game/content/persistences";
 
 type PersistenceToastProps = {
@@ -10,18 +11,13 @@ export function PersistenceToast({
   persistence,
 }: PersistenceToastProps) {
   return (
-    <output aria-live="polite" className="persistence-toast">
-      <div>
-        <p>Qualcosa resiste al reset</p>
-        <strong>{persistence.title}</strong>
-      </div>
-      <button
-        aria-label="Chiudi notifica persistenza"
-        onClick={onClose}
-        type="button"
-      >
-        ×
-      </button>
-    </output>
+    <DiscoveryToast
+      closeLabel="Chiudi notifica persistenza"
+      label="Qualcosa resiste al reset"
+      onClose={onClose}
+      tone="persistence"
+    >
+      {persistence.title}
+    </DiscoveryToast>
   );
 }

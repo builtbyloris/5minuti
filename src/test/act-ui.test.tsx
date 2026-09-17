@@ -47,8 +47,12 @@ describe("UI Atti e segreti", () => {
       name: "Continua a esplorare",
     });
     expect(document.activeElement).toBe(continueButton);
-    fireEvent.click(continueButton);
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(continueButton);
+    fireEvent.keyDown(document, { key: "Escape" });
     expect(onContinue).toHaveBeenCalledOnce();
+    fireEvent.click(continueButton);
+    expect(onContinue).toHaveBeenCalledTimes(2);
   });
 
   it("annuncia un segreto senza mostrare alcun totale", () => {

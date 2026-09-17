@@ -1,4 +1,7 @@
+"use client";
+
 import { GameButton } from "@/components/ui/game-button";
+import { useDialogFocus } from "@/components/ui/use-dialog-focus";
 import type { ActDefinition } from "@/game/content/acts";
 
 type ActCompleteOverlayProps = {
@@ -12,11 +15,15 @@ export function ActCompleteOverlay({
   isV1Complete,
   onContinue,
 }: ActCompleteOverlayProps) {
+  const dialogRef = useDialogFocus(onContinue);
+
   return (
     <section
+      aria-describedby="act-complete-description"
       aria-labelledby="act-complete-title"
       aria-modal="true"
       className="act-complete-overlay"
+      ref={dialogRef}
       role="dialog"
     >
       <div aria-hidden="true" className="act-complete-overlay__signal" />
@@ -24,7 +31,7 @@ export function ActCompleteOverlay({
       <h2 id="act-complete-title">
         Atto {act.id} — {act.title}
       </h2>
-      <blockquote>{act.revelation}</blockquote>
+      <blockquote id="act-complete-description">{act.revelation}</blockquote>
       <p className="act-complete-overlay__hook">
         {isV1Complete ? "Sei tornato troppo presto." : act.hook}
       </p>
