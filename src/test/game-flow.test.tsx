@@ -117,6 +117,7 @@ describe("reset save", () => {
     });
     expect(document.activeElement).toBe(finalConfirmation);
     fireEvent.click(finalConfirmation);
+    fireEvent.click(finalConfirmation);
 
     await waitFor(async () => expect(await localSave.load()).toBeNull());
     expect(screen.getByText(/La home mostrerà Nuova partita/)).toBeDefined();

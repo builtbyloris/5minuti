@@ -9,6 +9,7 @@ type DialogueBoxProps = {
   onChoice: (choice: DialogueChoice) => void;
   onClose: () => void;
   response?: string;
+  returnFocus?: HTMLElement | null;
   variant: DialogueVariant;
 };
 
@@ -17,9 +18,14 @@ export function DialogueBox({
   onChoice,
   onClose,
   response,
+  returnFocus,
   variant,
 }: DialogueBoxProps) {
-  const dialogRef = useDialogFocus(onClose, response ?? variant.id);
+  const dialogRef = useDialogFocus(
+    onClose,
+    response ?? variant.id,
+    returnFocus,
+  );
 
   return (
     <section

@@ -5,7 +5,11 @@ import { useEffect, useRef } from "react";
 const FOCUSABLE =
   'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function useDialogFocus(onEscape?: () => void, refreshKey = "default") {
+export function useDialogFocus(
+  onEscape?: () => void,
+  refreshKey = "default",
+  returnFocus?: HTMLElement | null,
+) {
   const dialogRef = useRef<HTMLDivElement | HTMLElement | null>(null);
   const escapeRef = useRef(onEscape);
   escapeRef.current = onEscape;
@@ -50,9 +54,9 @@ export function useDialogFocus(onEscape?: () => void, refreshKey = "default") {
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      previousFocus?.focus();
+      (returnFocus ?? previousFocus)?.focus();
     };
-  }, [refreshKey]);
+  }, [refreshKey, returnFocus]);
 
   return dialogRef;
 }

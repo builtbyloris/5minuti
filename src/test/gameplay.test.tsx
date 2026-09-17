@@ -55,6 +55,22 @@ describe("GameplaySession", () => {
     expect(screen.getByText("04:29")).toBeDefined();
   });
 
+  it("ignora input rapidi ripetuti mentre un'azione è in salvataggio", async () => {
+    await localSave.save(createInitialGameState({ id: "guest-rapid-input" }));
+    render(<GameplaySession />);
+    await flushPromises();
+
+    const waitButton = screen.getByRole("button", {
+      name: "Aspetta 15 secondi",
+    });
+    fireEvent.click(waitButton);
+    fireEvent.click(waitButton);
+    await flushPromises();
+
+    expect(screen.getByText("04:45")).toBeDefined();
+    expect((await localSave.load())?.run.remainingSeconds).toBe(285);
+  });
+
   it("mostra il reset una volta e riparte dal loop successivo", async () => {
     const state = createInitialGameState({ id: "guest-test" });
     await localSave.save({
@@ -197,17 +213,18 @@ describe("GameplaySession", () => {
       }),
     );
     expect(screen.getByRole("dialog")).toBeDefined();
+    await flushPromises();
     expect(
       screen.getByRole("button", {
         name: /Chiedere di Elena e delle 23:57Parla · 10s/,
       }),
     ).toBeDefined();
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: /Chiedere di Elena e delle 23:57Parla · 10s/,
-      }),
-    );
+    const dialogueChoice = screen.getByRole("button", {
+      name: /Chiedere di Elena e delle 23:57Parla · 10s/,
+    });
+    fireEvent.click(dialogueChoice);
+    fireEvent.click(dialogueChoice);
     await flushPromises();
 
     expect(screen.getByText("04:50")).toBeDefined();
@@ -216,6 +233,28 @@ describe("GameplaySession", () => {
     ).toBeGreaterThan(0);
     expect((await localSave.load())?.run.currentActId).toBe(1);
     expect((await localSave.load())?.progression.completedActs).toEqual([]);
+  });
+
+  it("restituisce il focus al trigger quando il dialogo viene chiuso con Escape", async () => {
+    const state = createInitialGameState({ id: "guest-dialog-focus" });
+    await localSave.save({
+      ...state,
+      run: { ...state.run, currentLocationId: "farmacia" },
+    });
+    render(<GameplaySession />);
+    await flushPromises();
+
+    const talkButton = screen.getByRole("button", {
+      name: /Parla con il FarmacistaParla/,
+    });
+    fireEvent.click(talkButton);
+    await flushPromises();
+    expect(screen.getByRole("dialog")).toBeDefined();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(talkButton);
   });
 
   it("scopre un indizio con Esplora e rende disponibile Usa", async () => {

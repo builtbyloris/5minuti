@@ -108,6 +108,8 @@ export function GameplaySession() {
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRemainingRef = useRef<number | null>(null);
   const previousRemainingRef = useRef<number | null>(null);
+  const actionInProgressRef = useRef(false);
+  const dialogueTriggerRef = useRef<HTMLElement | null>(null);
 
   const updatePhase = useCallback((nextPhase: SessionPhase) => {
     phaseRef.current = nextPhase;
@@ -368,6 +370,19 @@ export function GameplaySession() {
       seconds,
       `Azione completata: ${seconds} secondi trascorsi.`,
     );
+  }
+
+  async function runExclusiveAction(action: () => Promise<void>) {
+    if (actionInProgressRef.current || phaseRef.current !== "playing") {
+      return;
+    }
+
+    actionInProgressRef.current = true;
+    try {
+      await action();
+    } finally {
+      actionInProgressRef.current = false;
+    }
   }
 
   async function travel(destinationId: string) {
@@ -715,15 +730,23 @@ export function GameplaySession() {
           <ActionGrid
             disabled={phase !== "playing" || Boolean(activeDialogue)}
             interactions={availableInteractions}
-            onSelect={(interaction) => void performInteraction(interaction)}
+            onSelect={(interaction, trigger) => {
+              if (interaction.dialogueId) {
+                dialogueTriggerRef.current = trigger;
+              }
+              void runExclusiveAction(() => performInteraction(interaction));
+            }}
           />
 
           {activeDialogue ? (
             <DialogueBox
               characterName={activeDialogue.characterName}
-              onChoice={(choice) => void chooseDialogueOption(choice)}
+              onChoice={(choice) =>
+                void runExclusiveAction(() => chooseDialogueOption(choice))
+              }
               onClose={() => setActiveDialogue(null)}
               response={activeDialogue.response}
+              returnFocus={dialogueTriggerRef.current}
               variant={activeDialogue.variant}
             />
           ) : null}
@@ -744,13 +767,15 @@ export function GameplaySession() {
                   Boolean(activeSubscene)
                 }
                 locations={CITY_LOCATIONS}
-                onTravel={(destinationId) => void travel(destinationId)}
+                onTravel={(destinationId) =>
+                  void runExclusiveAction(() => travel(destinationId))
+                }
               />
 
               <GameButton
                 className="mt-4"
                 disabled={phase !== "playing" || Boolean(activeDialogue)}
-                onClick={() => void consumeTime(15)}
+                onClick={() => void runExclusiveAction(() => consumeTime(15))}
               >
                 Aspetta 15 secondi
               </GameButton>

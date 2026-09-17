@@ -4,7 +4,10 @@ import type { InteractionDefinition } from "@/game/content/interactions";
 type ActionGridProps = {
   disabled?: boolean;
   interactions: InteractionDefinition[];
-  onSelect: (interaction: InteractionDefinition) => void;
+  onSelect: (
+    interaction: InteractionDefinition,
+    trigger: HTMLButtonElement,
+  ) => void;
 };
 
 const actionLabels: Record<InteractionDefinition["actionType"], string> = {
@@ -32,7 +35,7 @@ export function ActionGrid({
             <GameButton
               disabled={disabled}
               key={interaction.id}
-              onClick={() => onSelect(interaction)}
+              onClick={(event) => onSelect(interaction, event.currentTarget)}
               variant={
                 interaction.actionType === "observe" ? "primary" : "secondary"
               }

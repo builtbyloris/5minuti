@@ -10,9 +10,11 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 ## Stato del progetto
 
-**Milestone 10 — Audio, polish e accessibilità.**
+**Milestone 11 — Testing tecnico finale V1.**
 
 Il vertical slice narrativo V1 è giocabile dall'Atto 1 all'Atto 3. Audio e motion sono presentazione opzionale: il gioco resta completo con entrambi i volumi a zero, autoplay bloccato o movimento ridotto. La modalità guest resta interamente locale e offline; un account Google opzionale può sincronizzare la stessa copia locale tramite Supabase. Il cloud opera in modalità best-effort e non è mai una dipendenza del gameplay.
+
+La verifica tecnica M11 copre i flussi Atti 1–3, reset, migrazioni v1–v5, input rapido, accessibilità strutturale e una matrice responsive Chromium. Il protocollo UX è pronto, ma i test con partecipanti reali non sono ancora stati eseguiti. La V1 non è dichiarata pronta al rilascio: gameplay/discovery delle Anomalie resta un blocker e OAuth, RLS e sync live richiedono configurazione esterna.
 
 ## Stack
 

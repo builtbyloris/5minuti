@@ -38,6 +38,10 @@ yarn-error.log*
 /docs/ROADMAP_V1.md
 /docs/STORY_CANON_V1.md
 /docs/CODEX_V1_SPEC.md
+/docs/UX_TEST_PLAN_V1.md
+/docs/UX_TEST_REPORT_TEMPLATE.md
+/docs/V1_RELEASE_CHECKLIST.md
+/docs/M11_TECHNICAL_TEST_REPORT.md
 
 # vercel
 .vercel

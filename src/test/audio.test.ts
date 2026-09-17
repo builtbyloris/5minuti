@@ -1,9 +1,11 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
   AudioController,
   type AudioElementLike,
 } from "@/audio/audio-controller";
-import { getTimerCue } from "@/audio/audio-cues";
+import { AUDIO_TRACKS, getTimerCue } from "@/audio/audio-cues";
 import { getEffectiveReducedMotion } from "@/audio/audio-provider";
 import { createInitialGameState } from "@/game/state/initial-state";
 
@@ -19,6 +21,16 @@ class FakeAudio implements AudioElementLike {
 }
 
 describe("AudioController", () => {
+  it("riferisce asset WAV presenti e leggibili per ogni traccia", () => {
+    for (const track of Object.values(AUDIO_TRACKS)) {
+      const asset = readFileSync(
+        resolve(process.cwd(), "public", track.src.slice(1)),
+      );
+      expect(asset.subarray(0, 4).toString("ascii")).toBe("RIFF");
+      expect(asset.byteLength).toBeGreaterThan(44);
+    }
+  });
+
   it("attende l'interazione, mantiene una sola istanza per ambience e pulisce", () => {
     const elements: FakeAudio[] = [];
     const controller = new AudioController((src) => {
