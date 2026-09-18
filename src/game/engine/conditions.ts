@@ -1,4 +1,6 @@
 import type { CharacterId } from "@/game/content/characters";
+import { isPostActExploration } from "@/game/engine/anomalies";
+import { getLocalDateKey } from "@/game/engine/calendar";
 import { hasPersistence } from "@/game/engine/persistences";
 import { getCharactersAtLocation } from "@/game/engine/routines";
 import type { GameState, LocationId } from "@/game/state/types";
@@ -12,6 +14,9 @@ export type GameCondition =
   | { has: boolean; knowledgeId: string; type: "knowledge" }
   | { has: boolean; persistenceId: string; type: "persistence" }
   | { has: boolean; secretId: string; type: "secret" }
+  | { anomalyId: string; has: boolean; type: "anomaly" }
+  | { type: "post-act-exploration" }
+  | { divisor: number; type: "loop-divisible-by" }
   | { key: string; type: "run-flag"; value: boolean }
   | { key: string; type: "world-flag"; value: boolean }
   | { active: boolean; id: string; type: "subscene" }
@@ -25,6 +30,7 @@ export function evaluateCondition(
   state: GameState,
   condition: GameCondition,
   elapsedSecond: number,
+  currentDateKey = getLocalDateKey(),
 ) {
   switch (condition.type) {
     case "act-is":
@@ -62,6 +68,17 @@ export function evaluateCondition(
         state.progression.discoveredSecrets.includes(condition.secretId) ===
         condition.has
       );
+    case "anomaly":
+      return (
+        state.progression.discoveredAnomalies.includes(condition.anomalyId) ===
+        condition.has
+      );
+    case "post-act-exploration":
+      return isPostActExploration(state, currentDateKey);
+    case "loop-divisible-by":
+      return (
+        condition.divisor > 0 && state.run.loopNumber % condition.divisor === 0
+      );
     case "run-flag":
       return state.run.runFlags[condition.key] === condition.value;
     case "world-flag":
@@ -83,8 +100,9 @@ export function conditionsPass(
   state: GameState,
   conditions: GameCondition[] = [],
   elapsedSecond: number,
+  currentDateKey = getLocalDateKey(),
 ) {
   return conditions.every((condition) =>
-    evaluateCondition(state, condition, elapsedSecond),
+    evaluateCondition(state, condition, elapsedSecond, currentDateKey),
   );
 }

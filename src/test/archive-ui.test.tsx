@@ -40,4 +40,29 @@ describe("ArchiveTabs", () => {
     fireEvent.click(screen.getByRole("tab", { name: /Anomalie/i }));
     expect(screen.getByText("Nessuna anomalia registrata.")).toBeTruthy();
   });
+
+  it("mostra titolo, testo e luogo di una anomalia scoperta senza rivelare totali", () => {
+    const state = createInitialGameState({ id: "archive-anomaly" });
+    render(
+      <ArchiveTabs
+        archive={createArchiveViewModel({
+          ...state,
+          progression: {
+            ...state.progression,
+            discoveredAnomalies: ["station_display_out_of_time"],
+          },
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /Anomalie/i }));
+
+    expect(screen.getByText("Display fuori tempo")).toBeTruthy();
+    expect(screen.getByText("Luogo: Stazione")).toBeTruthy();
+    expect(
+      screen.getByText(/il display della stazione mostra 23:55/),
+    ).toBeTruthy();
+    expect(screen.queryByText(/\/3/)).toBeNull();
+    expect(screen.queryByText(/rare|provoked|daily/i)).toBeNull();
+  });
 });

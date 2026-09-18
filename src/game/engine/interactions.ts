@@ -16,6 +16,7 @@ export type InteractionExecutionResult =
       acquiredKnowledgeIds: string[];
       anchor: ClockAnchor;
       completedActId: number | null;
+      discoveredAnomalyIds: string[];
       discoveredClueIds: string[];
       discoveredSecretIds: string[];
       grantedPersistenceIds: string[];
@@ -35,9 +36,15 @@ export type InteractionExecutionResult =
 export function getAvailableInteractions(
   state: GameState,
   elapsedSecond: number,
+  currentDateKey?: string,
 ) {
   return INTERACTION_DEFINITIONS.filter((interaction) =>
-    conditionsPass(state, interaction.conditions, elapsedSecond),
+    conditionsPass(
+      state,
+      interaction.conditions,
+      elapsedSecond,
+      currentDateKey,
+    ),
   );
 }
 
@@ -64,7 +71,12 @@ export function executeInteraction(
     LOOP_DURATION_SECONDS - synchronized.state.run.remainingSeconds;
 
   if (
-    !conditionsPass(synchronized.state, interaction.conditions, elapsedSecond)
+    !conditionsPass(
+      synchronized.state,
+      interaction.conditions,
+      elapsedSecond,
+      currentDateKey,
+    )
   ) {
     return {
       ok: false,
@@ -93,6 +105,7 @@ export function executeInteraction(
     acquiredKnowledgeIds: effects.acquiredKnowledgeIds,
     anchor: timed.anchor,
     completedActId: effects.completedActId,
+    discoveredAnomalyIds: effects.discoveredAnomalyIds,
     discoveredClueIds: effects.discoveredClueIds,
     discoveredSecretIds: effects.discoveredSecretIds,
     grantedPersistenceIds: effects.grantedPersistenceIds,

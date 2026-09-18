@@ -5,6 +5,7 @@ import { getTimerCue } from "@/audio/audio-cues";
 import { useAudio } from "@/audio/audio-provider";
 import { ActCompleteOverlay } from "@/components/game/act-complete-overlay";
 import { ActionGrid } from "@/components/game/action-grid";
+import { AnomalyToast } from "@/components/game/anomaly-toast";
 import { CityMap } from "@/components/game/city-map";
 import { ClueToast } from "@/components/game/clue-toast";
 import { CountdownTimer } from "@/components/game/countdown-timer";
@@ -18,6 +19,10 @@ import { GameButton } from "@/components/ui/game-button";
 import { Panel } from "@/components/ui/panel";
 import { discoverPerson, syncVisiblePeople } from "@/game/archive/discoveries";
 import { type ActDefinition, getActDefinition } from "@/game/content/acts";
+import {
+  type AnomalyDefinition,
+  getAnomalyDefinition,
+} from "@/game/content/anomalies";
 import { type ClueDefinition, getClueDefinition } from "@/game/content/clues";
 import {
   type DialogueChoice,
@@ -96,6 +101,9 @@ export function GameplaySession() {
   );
   const [knowledgeToast, setKnowledgeToast] =
     useState<KnowledgeDefinition | null>(null);
+  const [anomalyToast, setAnomalyToast] = useState<AnomalyDefinition | null>(
+    null,
+  );
   const [persistenceToast, setPersistenceToast] =
     useState<PersistenceDefinition | null>(null);
   const [secretToast, setSecretToast] = useState<SecretDefinition | null>(null);
@@ -145,6 +153,7 @@ export function GameplaySession() {
     await persist(resetState, false);
     resetInProgressRef.current = false;
     setActiveDialogue(null);
+    setAnomalyToast(null);
     setKnowledgeToast(null);
     setPersistenceToast(null);
     setSecretToast(null);
@@ -326,6 +335,16 @@ export function GameplaySession() {
   }, [game, phase, playEffect]);
 
   useEffect(() => {
+    if (!anomalyToast) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setAnomalyToast(null), 5_000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [anomalyToast]);
+
+  useEffect(() => {
     if (!knowledgeToast) {
       return;
     }
@@ -462,6 +481,14 @@ export function GameplaySession() {
       setKnowledgeToast(acquired);
     }
 
+    const discoveredAnomalyId = result.discoveredAnomalyIds[0];
+    const discoveredAnomaly = discoveredAnomalyId
+      ? getAnomalyDefinition(discoveredAnomalyId)
+      : null;
+    if (discoveredAnomaly) {
+      setAnomalyToast(discoveredAnomaly);
+    }
+
     const discoveredClueId = result.discoveredClueIds[0];
     const discoveredClue = discoveredClueId
       ? getClueDefinition(discoveredClueId)
@@ -488,6 +515,7 @@ export function GameplaySession() {
 
     if (
       result.acquiredKnowledgeIds.length > 0 ||
+      result.discoveredAnomalyIds.length > 0 ||
       result.discoveredClueIds.length > 0 ||
       result.grantedPersistenceIds.length > 0 ||
       result.discoveredSecretIds.length > 0
@@ -535,6 +563,13 @@ export function GameplaySession() {
     if (acquired) {
       setKnowledgeToast(acquired);
     }
+    const discoveredAnomalyId = effects.discoveredAnomalyIds[0];
+    const discoveredAnomaly = discoveredAnomalyId
+      ? getAnomalyDefinition(discoveredAnomalyId)
+      : null;
+    if (discoveredAnomaly) {
+      setAnomalyToast(discoveredAnomaly);
+    }
     const discoveredClueId = effects.discoveredClueIds[0];
     const discoveredClue = discoveredClueId
       ? getClueDefinition(discoveredClueId)
@@ -559,6 +594,7 @@ export function GameplaySession() {
     }
     if (
       effects.acquiredKnowledgeIds.length > 0 ||
+      effects.discoveredAnomalyIds.length > 0 ||
       effects.discoveredClueIds.length > 0 ||
       effects.grantedPersistenceIds.length > 0 ||
       effects.discoveredSecretIds.length > 0
@@ -638,7 +674,11 @@ export function GameplaySession() {
       ? getObservableDetails(game, currentNode)
       : [];
   const isBlackout = game.world.flags.blackout === true;
-  const availableInteractions = getAvailableInteractions(game, elapsedSecond);
+  const availableInteractions = getAvailableInteractions(
+    game,
+    elapsedSecond,
+    getLocalDateKey(),
+  );
   const acquiredKnowledge = getAcquiredKnowledge(game);
   const discoveredClues = getDiscoveredClues(game);
   const activePersistences = getActivePersistences(game);
@@ -809,6 +849,13 @@ export function GameplaySession() {
         <KnowledgeToast
           knowledge={knowledgeToast}
           onClose={() => setKnowledgeToast(null)}
+        />
+      ) : null}
+
+      {anomalyToast ? (
+        <AnomalyToast
+          anomaly={anomalyToast}
+          onClose={() => setAnomalyToast(null)}
         />
       ) : null}
 

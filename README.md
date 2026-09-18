@@ -14,7 +14,7 @@ La V1 sarà un vertical slice giocabile con gli Atti 1–3, non la campagna comp
 
 Il vertical slice narrativo V1 è giocabile dall'Atto 1 all'Atto 3. Audio e motion sono presentazione opzionale: il gioco resta completo con entrambi i volumi a zero, autoplay bloccato o movimento ridotto. La modalità guest resta interamente locale e offline; un account Google opzionale può sincronizzare la stessa copia locale tramite Supabase. Il cloud opera in modalità best-effort e non è mai una dipendenza del gameplay.
 
-La verifica tecnica M11 copre i flussi Atti 1–3, reset, migrazioni v1–v5, input rapido, accessibilità strutturale e una matrice responsive Chromium. Il protocollo UX è pronto, ma i test con partecipanti reali non sono ancora stati eseguiti. La V1 non è dichiarata pronta al rilascio: gameplay/discovery delle Anomalie resta un blocker e OAuth, RLS e sync live richiedono configurazione esterna.
+La verifica tecnica M11 copre i flussi Atti 1–3, reset, migrazioni v1–v5, input rapido, accessibilità strutturale e una matrice responsive Chromium. Il gameplay V1 include inoltre tre Anomalie opzionali e data-driven. Il protocollo UX è pronto, ma i test con partecipanti reali non sono ancora stati eseguiti. La V1 non è dichiarata pronta al rilascio: OAuth, RLS e sync live richiedono configurazione esterna e restano le verifiche UX/manuali indicate nella checklist locale.
 
 ## Stack
 
@@ -70,6 +70,14 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Il seminterrato è una subscene resettabile della Farmacia: non modifica la topologia a quattro nodi.
 - Sono presenti esattamente tre segreti ambientali opzionali, uno sbloccato dopo ciascun Atto. Non sono richiesti alla storia e il totale complessivo non viene mostrato.
 
+## Anomalie V1
+
+- Le Anomalie sono tre contenuti data-driven di tipo daily, provoked e rare, scopribili soltanto nell'esplorazione post-Atto tramite normali azioni di gioco.
+- Sono osservazioni opzionali e prive di spiegazione: non completano Atti, non sbloccano la storia e restano separate da knowledge, indizi, segreti e persistenze.
+- La discovery viene registrata in modo idempotente in `discoveredAnomalies`, sopravvive a reset e save/load ed è inclusa nel merge cloud monotonic già esistente.
+- L'Archivio mostra soltanto titolo, descrizione e luogo delle Anomalie realmente osservate, senza categorie tecniche, placeholder o totale complessivo.
+- L'Anomalia rara usa una condizione deterministica e testabile interna al motore; il trigger esatto non viene anticipato nell'interfaccia.
+
 ## Policy dell'Archivio
 
 - L'Archivio è un view model derivato dal `GameState`, non una copia della progressione e non una wiki del contenuto.
@@ -77,7 +85,7 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Persone e luoghi vengono registrati in modo idempotente soltanto quando sono realmente osservati o raggiunti. Il seminterrato resta una sottoscena della Farmacia.
 - Le schede progressive usano knowledge, indizi, Atti completati, persistenze e segreti già presenti come fonti autorevoli.
 - Durante `/archivio` non viene creato alcun clock: il gameplay riprende dallo snapshot salvato all'uscita da `/gioca`.
-- La sezione Anomalie legge `discoveredAnomalies`, ma la scoperta via gameplay delle anomalie non è ancora implementata.
+- La sezione Anomalie deriva le definizioni realmente scoperte da `discoveredAnomalies`; gli ID ignoti non producono schede né anticipazioni.
 
 ## Account e sincronizzazione
 
@@ -98,7 +106,7 @@ Il salvataggio guest usa `localStorage`, non contiene dati sensibili ed è indip
 - Il browser sblocca l’audio soltanto dopo la prima interazione valida. Un rifiuto di `play()`, un asset non disponibile o il volume zero non generano errori applicativi e non fermano il gioco.
 - Pioggia e città sono attive soltanto in `/gioca` e vengono sospese quando la pagina è nascosta o quando si lascia la route.
 - I cue del timer derivano dal clock autorevole: uno attraversando i 30 secondi e uno, più evidente, attraversando i 10. Un recupero dalla background tab produce al massimo il cue della soglia più urgente.
-- Knowledge, indizi, persistenze e segreti condividono un feedback sonoro discreto, attivato soltanto dall’evento di nuova scoperta. Il reset usa un cue separato e non aspetta che termini.
+- Knowledge, indizi, persistenze, segreti e anomalie condividono un feedback sonoro discreto, attivato soltanto dall’evento di nuova scoperta. Il reset usa un cue separato e non aspetta che termini.
 - `/impostazioni` salva Atmosfera, Effetti, sottotitoli e riduzione del movimento nel LocalSave. Durante il merge cloud le impostazioni restano quelle del dispositivo corrente.
 - Il movimento effettivamente ridotto è l’OR tra `prefers-reduced-motion` e la preferenza interna. Flash, transizioni e feedback usano una variante minima; il contenuto non cambia.
 - Le scene dell’intro includono caption testuali essenziali, indipendenti dai volumi. Il timer non usa `aria-live` ogni secondo e comunica l’urgenza anche con testo.
@@ -149,9 +157,9 @@ src/
   game/
     archive/           metadata, discovery tracking e view model anti-spoiler
     cloud/             adapter cloud tipizzato e validazione record Supabase
-    engine/            clock, scheduler, Atti, interazioni, condizioni, effetti e persistenze
+    engine/            clock, scheduler, Atti, anomalie, interazioni, condizioni, effetti e persistenze
     sync/               merge puro, conflitti e coordinator local-first
-    content/           Atti, città, routine, dialoghi, knowledge, indizi, segreti e persistenze
+    content/           Atti, anomalie, città, routine, dialoghi, knowledge, indizi, segreti e persistenze
     state/             tipi, factory, selettori e transizioni pure
     persistence/       adapter locale, validazione e migrazioni
   lib/                 utility generiche

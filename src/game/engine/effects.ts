@@ -1,6 +1,7 @@
 import { discoverLocation } from "@/game/archive/discoveries";
 import type { InteractionEffect } from "@/game/content/interactions";
 import { syncActCompletion } from "@/game/engine/acts";
+import { discoverAnomaly } from "@/game/engine/anomalies";
 import { getLocalDateKey } from "@/game/engine/calendar";
 import { discoverClue } from "@/game/engine/clues";
 import { acquireKnowledge } from "@/game/engine/knowledge";
@@ -15,6 +16,7 @@ export type EffectsResult = {
   acquiredKnowledgeIds: string[];
   completedActId: number | null;
   discoveredClueIds: string[];
+  discoveredAnomalyIds: string[];
   discoveredSecretIds: string[];
   grantedPersistenceIds: string[];
   removedPersistenceIds: string[];
@@ -29,12 +31,19 @@ export function applyInteractionEffects(
   let nextState = state;
   const acquiredKnowledgeIds: string[] = [];
   const discoveredClueIds: string[] = [];
+  const discoveredAnomalyIds: string[] = [];
   const discoveredSecretIds: string[] = [];
   const grantedPersistenceIds: string[] = [];
   const removedPersistenceIds: string[] = [];
 
   for (const effect of effects) {
-    if (effect.type === "acquire-knowledge") {
+    if (effect.type === "discover-anomaly") {
+      const result = discoverAnomaly(nextState, effect.anomalyId);
+      nextState = result.state;
+      if (result.discovered) {
+        discoveredAnomalyIds.push(effect.anomalyId);
+      }
+    } else if (effect.type === "acquire-knowledge") {
       const result = acquireKnowledge(nextState, effect.knowledgeId);
       nextState = result.state;
       if (result.acquired) {
@@ -102,6 +111,7 @@ export function applyInteractionEffects(
   return {
     acquiredKnowledgeIds,
     completedActId: completion.completedActId,
+    discoveredAnomalyIds,
     discoveredClueIds,
     discoveredSecretIds,
     grantedPersistenceIds,

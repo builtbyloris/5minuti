@@ -176,6 +176,35 @@ describe("GameplaySession", () => {
     expect(playEffect).toHaveBeenCalledTimes(1);
   });
 
+  it("registra l'anomalia daily con toast, audio e salvataggio immediato", async () => {
+    const state = createInitialGameState({ id: "guest-anomaly" });
+    await localSave.save({
+      ...state,
+      progression: {
+        ...state.progression,
+        actGate: { nextActAvailableOn: "2026-09-17" },
+        completedActs: [1],
+      },
+    });
+    render(<GameplaySession />);
+    await flushPromises();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Osserva il lampioneOsserva · 5s/,
+      }),
+    );
+    await flushPromises();
+
+    expect(screen.getByText("Anomalia registrata")).toBeDefined();
+    expect(screen.getByText("Luce fuori fase")).toBeDefined();
+    expect(playEffect).toHaveBeenCalledWith("discovery");
+    expect((await localSave.load())?.progression.discoveredAnomalies).toEqual([
+      "piazza_blue_flicker",
+    ]);
+    expect(screen.queryByText("Osserva il lampione")).toBeNull();
+  });
+
   it("riproduce una sola volta il cue attraversando la soglia timer", async () => {
     const state = createInitialGameState({ id: "guest-timer-audio" });
     await localSave.save({

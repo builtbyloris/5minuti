@@ -198,7 +198,7 @@ describe("ArchiveViewModel anti-spoiler", () => {
       ...state,
       progression: {
         ...state.progression,
-        discoveredAnomalies: ["observed-variation"],
+        discoveredAnomalies: ["piazza_blue_flicker"],
         discoveredClues: ["pharmacy_wet_footprints", "unknown-clue"],
         discoveredSecrets: ["pharmacy_blank_receipt", "unknown-secret"],
         persistences: [
@@ -221,7 +221,7 @@ describe("ArchiveViewModel anti-spoiler", () => {
       "pharmacy_blank_receipt",
     ]);
     expect(archive.anomalies).toHaveLength(1);
-    expect(archive.anomalies[0]?.title).toBe("Anomalia registrata");
+    expect(archive.anomalies[0]?.title).toBe("Luce fuori fase");
   });
 
   it("mostra Fine V1 senza creare un Atto 4", () => {

@@ -5,7 +5,7 @@ type DiscoveryToastProps = {
   closeLabel: string;
   label: string;
   onClose: () => void;
-  tone: "knowledge" | "persistence" | "secret" | "clue";
+  tone: "anomaly" | "clue" | "knowledge" | "persistence" | "secret";
 };
 
 export function DiscoveryToast({

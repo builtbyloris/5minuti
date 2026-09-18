@@ -4,7 +4,9 @@ import {
   type ArchiveFactRule,
 } from "@/game/archive/content";
 import { ACT_DEFINITIONS } from "@/game/content/acts";
+import { getAnomalyDefinition } from "@/game/content/anomalies";
 import { getClueDefinition } from "@/game/content/clues";
+import { getLocation } from "@/game/content/locations";
 import { getSecretDefinition } from "@/game/content/secrets";
 import { getActivePersistences } from "@/game/engine/persistences";
 import type { GameState } from "@/game/state/types";
@@ -159,14 +161,22 @@ export function createArchiveViewModel(
         ]
       : [];
   });
-  const anomalies = [...new Set(state.progression.discoveredAnomalies)].map(
-    (id) => ({
-      description:
-        "Una variazione osservata durante il loop è stata registrata nel dossier.",
-      facts: [],
-      id,
-      title: "Anomalia registrata",
-    }),
+  const anomalies = [...new Set(state.progression.discoveredAnomalies)].flatMap(
+    (id) => {
+      const anomaly = getAnomalyDefinition(id);
+      const location = anomaly ? getLocation(anomaly.locationId) : null;
+
+      return anomaly
+        ? [
+            {
+              description: anomaly.description,
+              facts: location ? [`Luogo: ${location.label}`] : [],
+              id: anomaly.id,
+              title: anomaly.title,
+            },
+          ]
+        : [];
+    },
   );
 
   return {

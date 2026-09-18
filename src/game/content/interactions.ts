@@ -1,3 +1,8 @@
+import {
+  PHARMACY_BELL_SECOND_MOTION_ANOMALY,
+  PIAZZA_BLUE_FLICKER_ANOMALY,
+  STATION_DISPLAY_OUT_OF_TIME_ANOMALY,
+} from "@/game/content/anomalies";
 import type { CharacterId } from "@/game/content/characters";
 import type { GameCondition } from "@/game/engine/conditions";
 import type { LocationId } from "@/game/state/types";
@@ -10,6 +15,7 @@ export type InteractionAction =
   | "use";
 
 export type InteractionEffect =
+  | { anomalyId: string; type: "discover-anomaly" }
   | { knowledgeId: string; type: "acquire-knowledge" }
   | { clueId: string; type: "discover-clue" }
   | { secretId: string; type: "discover-secret" }
@@ -32,6 +38,48 @@ export type InteractionDefinition = {
 };
 
 export const INTERACTION_DEFINITIONS: InteractionDefinition[] = [
+  {
+    actionType: "observe",
+    conditions: PIAZZA_BLUE_FLICKER_ANOMALY.conditions,
+    effects: [
+      {
+        anomalyId: PIAZZA_BLUE_FLICKER_ANOMALY.id,
+        type: "discover-anomaly",
+      },
+    ],
+    id: "observe-piazza-blue-flicker",
+    label: "Osserva il lampione",
+    result: "Per un istante, il lampione emette un impulso azzurro isolato.",
+    timeCost: 5,
+  },
+  {
+    actionType: "observe",
+    conditions: PHARMACY_BELL_SECOND_MOTION_ANOMALY.conditions,
+    effects: [
+      {
+        anomalyId: PHARMACY_BELL_SECOND_MOTION_ANOMALY.id,
+        type: "discover-anomaly",
+      },
+    ],
+    id: "observe-pharmacy-bell-second-motion",
+    label: "Osserva il campanello",
+    result: "Il campanello vibra una seconda volta senza essere toccato.",
+    timeCost: 5,
+  },
+  {
+    actionType: "observe",
+    conditions: STATION_DISPLAY_OUT_OF_TIME_ANOMALY.conditions,
+    effects: [
+      {
+        anomalyId: STATION_DISPLAY_OUT_OF_TIME_ANOMALY.id,
+        type: "discover-anomaly",
+      },
+    ],
+    id: "observe-station-display-out-of-time",
+    label: "Osserva il display",
+    result: "Il display mostra 23:55, poi torna subito all'orario corrente.",
+    timeCost: 5,
+  },
   {
     actionType: "explore",
     conditions: [{ locationId: "piazza", type: "location" }],
